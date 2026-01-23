@@ -20,9 +20,9 @@ public class DistrictController extends AbstractBaseController<DistrictDto, Inte
         this.districtService = service;
     }
 
-    @Operation(summary = "Отримати райони області (з пагінацією)")
-    @GetMapping("/by-region/{regionId}")
-    public ResponseEntity<Page<DistrictDto>> getByRegion(@PathVariable Integer regionId, Pageable pageable) {
+    @Operation(summary = "Отримати райони за ID області")
+    @GetMapping(params = "regionId")
+    public ResponseEntity<Page<DistrictDto>> getByRegion(@RequestParam Integer regionId, Pageable pageable) {
         return ResponseEntity.ok(districtService.findAllByRegionId(regionId, pageable));
     }
 }
