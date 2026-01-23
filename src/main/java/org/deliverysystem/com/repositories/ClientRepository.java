@@ -1,0 +1,13 @@
+package org.deliverysystem.com.repositories;
+
+import org.deliverysystem.com.entities.Client;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface ClientRepository extends JpaRepository<Client, Integer> {
+    Optional<Client> findByPhoneNumber(String phoneNumber);
+    boolean existsByPhoneNumber(String phoneNumber);
+}
