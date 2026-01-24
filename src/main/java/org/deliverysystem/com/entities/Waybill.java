@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.deliverysystem.com.annotations.GenerateCustomIntegerNumber;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -20,7 +22,8 @@ public class Waybill {
     @Column(name = "waybill_id")
     private Integer id;
 
-    @Column(name = "waybill_number", unique = true)
+    @GenerateCustomIntegerNumber
+    @Column(name = "waybill_number", unique = true, updatable = false)
     private Integer number;
 
     @Column(name = "created_at")

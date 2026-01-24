@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.deliverysystem.com.annotations.GenerateCustomIntegerNumber;
+
 import java.math.BigDecimal;
 
 @Entity
@@ -19,7 +21,8 @@ public class RouteList {
     @Column(name = "route_list_id")
     private Integer id;
 
-    @Column(name = "route_list_number", unique = true)
+    @GenerateCustomIntegerNumber
+    @Column(name = "route_list_number", unique = true, updatable = false)
     private Integer number;
 
     @Column(name = "route_list_total_weight")

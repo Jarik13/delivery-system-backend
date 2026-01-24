@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.deliverysystem.com.annotations.GenerateCustomIntegerNumber;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,7 +21,8 @@ public class Trip {
     @Column(name = "trip_id")
     private Integer id;
 
-    @Column(name = "trip_number")
+    @GenerateCustomIntegerNumber
+    @Column(name = "trip_number", unique = true, updatable = false)
     private Integer number;
 
     @Column(name = "trip_scheduled_departure_time")
