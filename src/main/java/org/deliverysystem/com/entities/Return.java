@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.deliverysystem.com.annotations.GenerateReturnTrackingNumber;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -20,7 +22,8 @@ public class Return {
     @Column(name = "return_id")
     private Integer id;
 
-    @Column(name = "return_tracking_number", unique = true)
+    @GenerateReturnTrackingNumber
+    @Column(name = "return_tracking_number", unique = true, updatable = false)
     private String trackingNumber;
 
     @Column(name = "initiation_date")

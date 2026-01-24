@@ -22,7 +22,7 @@ public class Shipment {
     private Integer id;
 
     @GenerateShipmentTrackingNumber
-    @Column(name = "shipment_tracking_number", unique = true)
+    @Column(name = "shipment_tracking_number", unique = true, updatable = false)
     private String trackingNumber;
 
     @Embedded
