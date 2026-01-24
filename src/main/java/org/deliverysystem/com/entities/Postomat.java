@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "postomats")
@@ -18,6 +19,7 @@ public class Postomat {
     @Column(name = "postomat_id")
     private Integer id;
 
+    @UuidGenerator(style = UuidGenerator.Style.RANDOM)
     @Column(name = "postomat_code", unique = true)
     private String code;
 
