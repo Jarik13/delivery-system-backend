@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.deliverysystem.com.annotations.GenerateShipmentTrackingNumber;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,6 +21,7 @@ public class Shipment {
     @Column(name = "shipment_id")
     private Integer id;
 
+    @GenerateShipmentTrackingNumber
     @Column(name = "shipment_tracking_number", unique = true)
     private String trackingNumber;
 
