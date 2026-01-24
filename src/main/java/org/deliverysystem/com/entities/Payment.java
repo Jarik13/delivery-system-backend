@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.deliverysystem.com.annotations.GenerateTransactionNumber;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -20,7 +22,8 @@ public class Payment {
     @Column(name = "payment_id")
     private Integer id;
 
-    @Column(name = "transaction_number", unique = true)
+    @GenerateTransactionNumber
+    @Column(name = "transaction_number", unique = true, updatable = false)
     private String transactionNumber;
 
     @Column(name = "payment_amount")
