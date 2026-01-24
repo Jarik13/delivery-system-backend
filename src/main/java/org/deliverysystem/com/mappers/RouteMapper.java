@@ -9,11 +9,15 @@ import org.mapstruct.Mapping;
 public interface RouteMapper extends GenericMapper<Route, RouteDto> {
     @Override
     @Mapping(source = "originBranch.id", target = "originBranchId")
+    @Mapping(source = "originBranch.deliveryPoint.name", target = "originBranchName")
     @Mapping(source = "destinationBranch.id", target = "destinationBranchId")
+    @Mapping(source = "destinationBranch.deliveryPoint.name", target = "destinationBranchName")
     RouteDto toDto(Route entity);
 
     @Override
     @Mapping(source = "originBranchId", target = "originBranch.id")
     @Mapping(source = "destinationBranchId", target = "destinationBranch.id")
+    @Mapping(target = "originBranch.deliveryPoint", ignore = true)
+    @Mapping(target = "destinationBranch.deliveryPoint", ignore = true)
     Route toEntity(RouteDto dto);
 }

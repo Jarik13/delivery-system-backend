@@ -21,8 +21,8 @@ public class RouteController extends AbstractBaseController<RouteDto, Integer> {
     }
 
     @Operation(summary = "Знайти маршрути, що виїжджають з відділення")
-    @GetMapping("/by-origin/{branchId}")
-    public ResponseEntity<Page<RouteDto>> getByOriginBranch(@PathVariable Integer branchId, Pageable pageable) {
+    @GetMapping("branchId")
+    public ResponseEntity<Page<RouteDto>> getByOriginBranch(@RequestParam Integer branchId, Pageable pageable) {
         return ResponseEntity.ok(routeService.findAllByOriginBranchId(branchId, pageable));
     }
 }
