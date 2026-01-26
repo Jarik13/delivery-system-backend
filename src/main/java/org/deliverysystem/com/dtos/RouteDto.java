@@ -23,5 +23,5 @@ public record RouteDto(
         String destinationBranchName,
 
         @Schema(description = "Чи потрібне сортування на маршруті", example = "false")
-        Boolean isNeedSorting
+        Boolean needSorting
 ) {}

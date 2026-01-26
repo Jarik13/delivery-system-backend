@@ -12,6 +12,7 @@ public interface RouteMapper extends GenericMapper<Route, RouteDto> {
     @Mapping(source = "originBranch.deliveryPoint.name", target = "originBranchName")
     @Mapping(source = "destinationBranch.id", target = "destinationBranchId")
     @Mapping(source = "destinationBranch.deliveryPoint.name", target = "destinationBranchName")
+    @Mapping(source = "needSorting", target = "needSorting")
     RouteDto toDto(Route entity);
 
     @Override
