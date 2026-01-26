@@ -18,7 +18,7 @@ public class Branch {
     @Column(name = "branch_id")
     private Integer id;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_point_id", unique = true)
     private DeliveryPoint deliveryPoint;
 

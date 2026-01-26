@@ -29,7 +29,7 @@ public class Postomat {
     @Column(name = "is_active")
     private Boolean isActive;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_point_id", unique = true)
     private DeliveryPoint deliveryPoint;
 }

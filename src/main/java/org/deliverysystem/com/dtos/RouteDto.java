@@ -12,15 +12,21 @@ public record RouteDto(
         @Schema(description = "ID відділення відправлення", example = "1")
         Integer originBranchId,
 
-        @Schema(description = "Назва відділення відправлення", example = "Відділення №1 (Київ)", accessMode = Schema.AccessMode.READ_ONLY)
+        @Schema(description = "Назва відділення відправлення", example = "Відділення №1", accessMode = Schema.AccessMode.READ_ONLY)
         String originBranchName,
+
+        @Schema(description = "Назва міста відправлення", example = "Київ", accessMode = Schema.AccessMode.READ_ONLY)
+        String originCityName,
 
         @NotNull
         @Schema(description = "ID відділення призначення", example = "2")
         Integer destinationBranchId,
 
-        @Schema(description = "Назва відділення призначення", example = "Відділення №5 (Львів)", accessMode = Schema.AccessMode.READ_ONLY)
+        @Schema(description = "Назва відділення призначення", example = "Відділення №5", accessMode = Schema.AccessMode.READ_ONLY)
         String destinationBranchName,
+
+        @Schema(description = "Назва міста призначення", example = "Львів", accessMode = Schema.AccessMode.READ_ONLY)
+        String destinationCityName,
 
         @Schema(description = "Чи потрібне сортування на маршруті", example = "false")
         Boolean needSorting
