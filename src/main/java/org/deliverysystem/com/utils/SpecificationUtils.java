@@ -1,0 +1,60 @@
+package org.deliverysystem.com.utils;
+
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Root;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
+
+import java.util.Collection;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class SpecificationUtils {
+    public static <S> Specification<S> iLike(String field, String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return (root, query, cb) ->
+                cb.like(cb.lower(getPath(root, field).as(String.class)), "%" + value.toLowerCase() + "%");
+    }
+
+    public static <S, T extends Comparable<? super T>> Specification<S> gte(String field, T value) {
+        if (value == null) {
+            return null;
+        }
+        return (root, query, cb) -> cb.greaterThanOrEqualTo(getPath(root, field), value);
+    }
+
+    public static <S, T extends Comparable<? super T>> Specification<S> lte(String field, T value) {
+        if (value == null) {
+            return null;
+        }
+        return (root, query, cb) -> cb.lessThanOrEqualTo(getPath(root, field), value);
+    }
+
+    public static <S> Specification<S> equal(String field, Object value) {
+        if (value == null) {
+            return null;
+        }
+        return (root, query, cb) -> cb.equal(getPath(root, field), value);
+    }
+
+    public static <S> Specification<S> in(String field, Collection<?> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        return (root, query, cb) -> getPath(root, field).in(values);
+    }
+
+    private static <Y, S> Path<Y> getPath(Root<S> root, String attributeName) {
+        Path<Y> path = (Path<Y>) root;
+        if (attributeName.contains(".")) {
+            for (String part : attributeName.split("\\.")) {
+                path = path.get(part);
+            }
+        } else {
+            path = path.get(attributeName);
+        }
+        return path;
+    }
+}
