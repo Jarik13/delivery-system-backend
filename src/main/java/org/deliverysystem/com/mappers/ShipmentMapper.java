@@ -90,7 +90,7 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
         Integer apartment = addr.getApartmentNumber();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("вул. ").append(street).append(", буд. ").append(houseNum);
+        sb.append(street).append(", буд. ").append(houseNum);
 
         if (apartment != null && apartment > 0) {
             sb.append(", кв. ").append(apartment);

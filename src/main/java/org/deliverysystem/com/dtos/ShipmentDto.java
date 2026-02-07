@@ -9,6 +9,7 @@ public record ShipmentDto(
         Integer id,
         String trackingNumber,
         LocalDateTime createdAt,
+        LocalDateTime issuedAt,
 
         BigDecimal deliveryPrice,
         BigDecimal weightPrice,
