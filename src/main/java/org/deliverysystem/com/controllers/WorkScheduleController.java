@@ -21,8 +21,8 @@ public class WorkScheduleController extends AbstractBaseController<WorkScheduleD
     }
 
     @Operation(summary = "Отримати графік роботи відділення")
-    @GetMapping("/by-branch/{branchId}")
-    public ResponseEntity<Page<WorkScheduleDto>> getByBranch(@PathVariable Integer branchId, Pageable pageable) {
+    @GetMapping("branchId")
+    public ResponseEntity<Page<WorkScheduleDto>> getByBranch(@RequestParam Integer branchId, Pageable pageable) {
         return ResponseEntity.ok(workScheduleService.findAllByBranchId(branchId, pageable));
     }
 }
