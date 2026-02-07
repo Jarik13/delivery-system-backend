@@ -4,7 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.ParcelDto;
+import org.deliverysystem.com.dtos.ParcelStatisticsDto;
 import org.deliverysystem.com.dtos.search.ParcelSearchCriteria;
 import org.deliverysystem.com.services.impl.ParcelService;
 import org.springdoc.core.annotations.ParameterObject;
@@ -17,12 +19,9 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/parcels")
 @Tag(name = "Parcels", description = "Управління посилками (параметри та умови зберігання)")
+@RequiredArgsConstructor
 public class ParcelController {
     private final ParcelService parcelService;
-
-    public ParcelController(ParcelService service) {
-        this.parcelService = service;
-    }
 
     @Operation(summary = "Отримати всі посилки (з фільтрацією за вагою, вартістю та типом)")
     @GetMapping
@@ -31,6 +30,12 @@ public class ParcelController {
             @ParameterObject Pageable pageable
     ) {
         return ResponseEntity.ok(parcelService.findAll(searchCriteria, pageable));
+    }
+
+    @Operation(summary = "Отримати статистику по посилках (мін/макс значення)")
+    @GetMapping("/statistics")
+    public ResponseEntity<ParcelStatisticsDto> getStatistics() {
+        return ResponseEntity.ok(parcelService.getStatistics());
     }
 
     @Operation(summary = "Отримати посилку за ID")

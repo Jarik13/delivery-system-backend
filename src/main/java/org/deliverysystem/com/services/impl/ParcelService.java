@@ -3,6 +3,7 @@ package org.deliverysystem.com.services.impl;
 import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.ParcelDto;
+import org.deliverysystem.com.dtos.ParcelStatisticsDto;
 import org.deliverysystem.com.dtos.search.ParcelSearchCriteria;
 import org.deliverysystem.com.entities.Parcel;
 import org.deliverysystem.com.entities.StorageCondition;
@@ -17,6 +18,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -67,6 +69,21 @@ public class ParcelService extends AbstractBaseService<Parcel, ParcelDto, Intege
                 .and(SpecificationUtils.lte("declaredValue", criteria.declaredValueMax()));
 
         return parcelRepository.findAll(spec, pageable).map(mapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public ParcelStatisticsDto getStatistics() {
+        BigDecimal minWeight = parcelRepository.findMinWeight();
+        BigDecimal maxWeight = parcelRepository.findMaxWeight();
+        BigDecimal minValue = parcelRepository.findMinDeclaredValue();
+        BigDecimal maxValue = parcelRepository.findMaxDeclaredValue();
+
+        return new ParcelStatisticsDto(
+                minWeight != null ? minWeight : BigDecimal.ZERO,
+                maxWeight != null ? maxWeight : BigDecimal.valueOf(100),
+                minValue != null ? minValue : BigDecimal.ZERO,
+                maxValue != null ? maxValue : BigDecimal.valueOf(50000)
+        );
     }
 
     private void setRelationships(Parcel entity, ParcelDto dto) {
