@@ -44,6 +44,18 @@ public class Shipment {
     @JoinColumn(name = "parcel_id", unique = true)
     private Parcel parcel;
 
+    @OneToOne(mappedBy = "shipment")
+    private ShipmentOriginDeliveryPoint originDeliveryPoint;
+
+    @OneToOne(mappedBy = "shipment")
+    private ShipmentDestinationDeliveryPoint destinationDeliveryPoint;
+
+    @OneToOne(mappedBy = "shipment")
+    private ShipmentOriginAddress originAddress;
+
+    @OneToOne(mappedBy = "shipment")
+    private ShipmentDestinationAddress destinationAddress;
+
     @ManyToOne
     @JoinColumn(name = "created_by_id")
     private Employee createdBy;

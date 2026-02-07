@@ -33,5 +33,8 @@ public record ShipmentDto(
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String parcelDescription,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String shipmentTypeName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String shipmentStatusName,
-        @Schema(accessMode = Schema.AccessMode.READ_ONLY) String createdByFullName
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY) String createdByFullName,
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY) String originLocationName,
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY) String destinationLocationName,
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY) BigDecimal actualWeight
 ) {}
