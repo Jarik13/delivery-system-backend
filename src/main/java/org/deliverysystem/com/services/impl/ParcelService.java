@@ -2,8 +2,8 @@ package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.constants.ErrorMessage;
-import org.deliverysystem.com.dtos.ParcelDto;
-import org.deliverysystem.com.dtos.ParcelStatisticsDto;
+import org.deliverysystem.com.dtos.parcels.ParcelDto;
+import org.deliverysystem.com.dtos.parcels.ParcelStatisticsDto;
 import org.deliverysystem.com.dtos.search.ParcelSearchCriteria;
 import org.deliverysystem.com.entities.Parcel;
 import org.deliverysystem.com.entities.StorageCondition;

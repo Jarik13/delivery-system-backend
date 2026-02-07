@@ -1,7 +1,7 @@
 package org.deliverysystem.com.dtos.shipments;
 
 import jakarta.validation.constraints.NotNull;
-import org.deliverysystem.com.dtos.ParcelDto;
+import org.deliverysystem.com.dtos.parcels.ParcelDto;
 
 import java.math.BigDecimal;
 

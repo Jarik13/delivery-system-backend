@@ -1,4 +1,4 @@
-package org.deliverysystem.com.dtos;
+package org.deliverysystem.com.dtos.shipments;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;

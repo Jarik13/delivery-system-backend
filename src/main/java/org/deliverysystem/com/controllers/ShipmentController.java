@@ -2,7 +2,7 @@ package org.deliverysystem.com.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.deliverysystem.com.dtos.ShipmentDto;
+import org.deliverysystem.com.dtos.shipments.ShipmentDto;
 import org.deliverysystem.com.services.impl.ShipmentService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
