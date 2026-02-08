@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.ShipmentDto;
+import org.deliverysystem.com.dtos.shipments.ShipmentStatisticsDto;
 import org.deliverysystem.com.services.impl.ShipmentService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,12 @@ public class ShipmentController {
     @GetMapping
     public ResponseEntity<Page<ShipmentDto>> getAll(ShipmentSearchCriteria criteria, Pageable pageable) {
         return ResponseEntity.ok(shipmentService.findAll(criteria, pageable));
+    }
+
+    @Operation(summary = "Отримати статистику по відправленням (мін/макс значення)")
+    @GetMapping("/statistics")
+    public ResponseEntity<ShipmentStatisticsDto> getStatistics() {
+        return ResponseEntity.ok(shipmentService.getStatistics());
     }
 
     @Operation(summary = "Отримати за ID")
