@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.ShipmentDto;
+import org.deliverysystem.com.dtos.shipments.ShipmentMovementDto;
 import org.deliverysystem.com.dtos.shipments.ShipmentStatisticsDto;
 import org.deliverysystem.com.services.impl.ShipmentService;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/shipments")
@@ -31,6 +34,12 @@ public class ShipmentController {
     @GetMapping("/statistics")
     public ResponseEntity<ShipmentStatisticsDto> getStatistics() {
         return ResponseEntity.ok(shipmentService.getStatistics());
+    }
+
+    @Operation(summary = "Отримати історію руху відправлення за ID (трекінг)")
+    @GetMapping("/{id}/movement")
+    public ResponseEntity<List<ShipmentMovementDto>> getMovementHistory(@PathVariable Integer id) {
+        return ResponseEntity.ok(shipmentService.getShipmentHistory(id));
     }
 
     @Operation(summary = "Отримати за ID")
@@ -56,17 +65,5 @@ public class ShipmentController {
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         shipmentService.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @Operation(summary = "Знайти за трек-номером")
-    @GetMapping("/tracking/{tracking}")
-    public ResponseEntity<ShipmentDto> findByTracking(@PathVariable String tracking) {
-        return ResponseEntity.ok(shipmentService.findByTrackingNumber(tracking));
-    }
-
-    @Operation(summary = "Історія відправлень конкретного клієнта")
-    @GetMapping("senderId")
-    public ResponseEntity<Page<ShipmentDto>> getBySender(@RequestParam Integer senderId, Pageable pageable) {
-        return ResponseEntity.ok(shipmentService.findAllBySenderId(senderId, pageable));
     }
 }

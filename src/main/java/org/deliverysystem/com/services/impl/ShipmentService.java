@@ -5,8 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.ShipmentDto;
+import org.deliverysystem.com.dtos.shipments.ShipmentMovementDto;
 import org.deliverysystem.com.dtos.shipments.ShipmentStatisticsDto;
 import org.deliverysystem.com.entities.Shipment;
+import org.deliverysystem.com.entities.Trip;
 import org.deliverysystem.com.mappers.ShipmentMapper;
 import org.deliverysystem.com.repositories.ShipmentRepository;
 import org.deliverysystem.com.utils.SpecificationUtils;
@@ -17,6 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, Integer> {
@@ -91,14 +96,49 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     }
 
     @Transactional(readOnly = true)
-    public ShipmentDto findByTrackingNumber(String trackingNumber) {
-        return shipmentRepository.findByTrackingNumber(trackingNumber).map(mapper::toDto)
-                .orElseThrow(() -> new EntityNotFoundException(ErrorMessage.SHIPMENT_NOT_FOUND_BY_TRACKING + trackingNumber));
-    }
+    public List<ShipmentMovementDto> getShipmentHistory(Integer shipmentId) {
+        Shipment shipment = shipmentRepository.findById(shipmentId).orElseThrow();
+        List<ShipmentMovementDto> history = new ArrayList<>();
 
-    @Transactional(readOnly = true)
-    public Page<ShipmentDto> findAllBySenderId(Integer senderId, Pageable pageable) {
-        return shipmentRepository.findAllBySenderId(senderId, pageable).map(mapper::toDto);
+        if (shipment.getOriginDeliveryPoint() != null) {
+            history.add(new ShipmentMovementDto(
+                    shipment.getCreatedAt(),
+                    shipment.getOriginDeliveryPoint().getDeliveryPoint().getName(),
+                    "Прийнято до відправлення"
+            ));
+        }
+
+        shipment.getShipmentWaybills().forEach(sw -> {
+            sw.getWaybill().getWaybillRoutes().forEach(wr -> {
+                if (wr.getTrip().getActualArrivalTime() != null) {
+                    history.add(new ShipmentMovementDto(
+                            wr.getTrip().getActualArrivalTime(),
+                            wr.getRoute().getDestinationBranch().getDeliveryPoint().getName(),
+                            "Прибуло на транзитний вузол"
+                    ));
+                }
+            });
+        });
+
+        shipment.getRouteSheetItems().forEach(item -> {
+            if (item.getDeliveredAt() != null) {
+                history.add(new ShipmentMovementDto(
+                        item.getDeliveredAt(),
+                        "Адреса отримувача",
+                        "Доставлено кур'єром"
+                ));
+            }
+        });
+
+        if (shipment.getIssuedAt() != null) {
+            history.add(new ShipmentMovementDto(
+                    shipment.getIssuedAt(),
+                    shipment.getDestinationDeliveryPoint().getDeliveryPoint().getName(),
+                    "Отримано клієнтом"
+            ));
+        }
+
+        return history.stream().sorted(Comparator.comparing(ShipmentMovementDto::time)).toList();
     }
 
     private BigDecimal defaultIfNull(BigDecimal value, BigDecimal defaultValue) {
