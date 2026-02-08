@@ -9,6 +9,7 @@ import org.deliverysystem.com.dtos.parcels.ParcelDto;
 import org.deliverysystem.com.dtos.parcels.ParcelStatisticsDto;
 import org.deliverysystem.com.dtos.search.ParcelSearchCriteria;
 import org.deliverysystem.com.services.impl.ParcelService;
+import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +26,7 @@ public class ParcelController {
 
     @Operation(summary = "Отримати всі посилки (з фільтрацією за вагою, вартістю та типом)")
     @GetMapping
-    public ResponseEntity<Page<ParcelDto>> getAll(
+    public ResponseEntity<RestPage<ParcelDto>> getAll(
             @ParameterObject ParcelSearchCriteria searchCriteria,
             @ParameterObject Pageable pageable
     ) {

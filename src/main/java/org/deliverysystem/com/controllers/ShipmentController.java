@@ -9,6 +9,7 @@ import org.deliverysystem.com.dtos.shipments.ShipmentDto;
 import org.deliverysystem.com.dtos.shipments.ShipmentMovementDto;
 import org.deliverysystem.com.dtos.shipments.ShipmentStatisticsDto;
 import org.deliverysystem.com.services.impl.ShipmentService;
+import org.deliverysystem.com.utils.RestPage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,7 @@ public class ShipmentController {
 
     @Operation(summary = "Отримати всі відправлення з фільтрацією")
     @GetMapping
-    public ResponseEntity<Page<ShipmentDto>> getAll(ShipmentSearchCriteria criteria, Pageable pageable) {
+    public ResponseEntity<RestPage<ShipmentDto>> getAll(ShipmentSearchCriteria criteria, Pageable pageable) {
         return ResponseEntity.ok(shipmentService.findAll(criteria, pageable));
     }
 

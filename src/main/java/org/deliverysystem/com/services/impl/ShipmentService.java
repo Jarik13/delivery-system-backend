@@ -11,7 +11,10 @@ import org.deliverysystem.com.entities.Shipment;
 import org.deliverysystem.com.entities.Trip;
 import org.deliverysystem.com.mappers.ShipmentMapper;
 import org.deliverysystem.com.repositories.ShipmentRepository;
+import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -32,15 +35,27 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         this.shipmentRepository = repo;
     }
 
+    @Override
+    @CacheEvict(value = {"shipmentPages", "shipmentStatistics"}, allEntries = true)
+    public ShipmentDto create(ShipmentDto dto) {
+        return super.create(dto);
+    }
+
+    @Override
+    @CacheEvict(value = {"shipmentPages", "shipmentStatistics", "shipmentMovements"}, allEntries = true)
+    public ShipmentDto update(Integer id, ShipmentDto dto) {
+        return super.update(id, dto);
+    }
+
     @Transactional(readOnly = true)
-    public Page<ShipmentDto> findAll(ShipmentSearchCriteria criteria, Pageable pageable) {
+    @Cacheable(value = "shipmentPages", key = "{#criteria, #pageable}", condition = "#pageable.pageNumber < 5")
+    public RestPage<ShipmentDto> findAll(ShipmentSearchCriteria criteria, Pageable pageable) {
         if (criteria == null) {
-            return shipmentRepository.findAll(pageable).map(mapper::toDto);
+            Page<ShipmentDto> result = shipmentRepository.findAll(pageable).map(mapper::toDto);
+            return new RestPage<>(result);
         }
 
-        Specification<Shipment> spec = Specification.where(
-                        SpecificationUtils.<Shipment>iLike("trackingNumber", criteria.trackingNumber())
-                )
+        Specification<Shipment> spec = Specification.where(SpecificationUtils.<Shipment>iLike("trackingNumber", criteria.trackingNumber()))
                 .and(SpecificationUtils.equal("shipmentStatus.id", criteria.shipmentStatusId()))
                 .and(SpecificationUtils.equal("shipmentType.id", criteria.shipmentTypeId()))
                 .and(SpecificationUtils.iLike("parcel.contentDescription", criteria.parcelDescription()))
@@ -63,10 +78,12 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                 .and(SpecificationUtils.gte("price.insuranceFee", criteria.insuranceFeeMin()))
                 .and(SpecificationUtils.lte("price.insuranceFee", criteria.insuranceFeeMax()));
 
-        return shipmentRepository.findAll(spec, pageable).map(mapper::toDto);
+        Page<ShipmentDto> result = shipmentRepository.findAll(spec, pageable).map(mapper::toDto);
+        return new RestPage<>(result);
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "shipmentStatistics", key = "'global'")
     public ShipmentStatisticsDto getStatistics() {
         return new ShipmentStatisticsDto(
                 defaultIfNull(shipmentRepository.getMinWeight(), BigDecimal.ZERO),
@@ -96,6 +113,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "shipmentMovements", key = "#shipmentId")
     public List<ShipmentMovementDto> getShipmentHistory(Integer shipmentId) {
         Shipment shipment = shipmentRepository.findById(shipmentId).orElseThrow();
         List<ShipmentMovementDto> history = new ArrayList<>();
