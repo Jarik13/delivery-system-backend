@@ -2,7 +2,7 @@ package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.constants.ErrorMessage;
-import org.deliverysystem.com.dtos.PaymentDto;
+import org.deliverysystem.com.dtos.payments.PaymentDto;
 import org.deliverysystem.com.entities.Payment;
 import org.deliverysystem.com.mappers.PaymentMapper;
 import org.deliverysystem.com.repositories.PaymentRepository;

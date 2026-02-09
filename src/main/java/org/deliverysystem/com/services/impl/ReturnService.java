@@ -2,7 +2,7 @@ package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.constants.ErrorMessage;
-import org.deliverysystem.com.dtos.ReturnDto;
+import org.deliverysystem.com.dtos.returns.ReturnDto;
 import org.deliverysystem.com.entities.Return;
 import org.deliverysystem.com.mappers.ReturnMapper;
 import org.deliverysystem.com.repositories.ReturnRepository;

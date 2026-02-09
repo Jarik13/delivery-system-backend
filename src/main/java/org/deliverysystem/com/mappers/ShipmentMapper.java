@@ -6,7 +6,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
-@Mapper(componentModel = "spring")
+import java.math.BigDecimal;
+
+@Mapper(componentModel = "spring", uses = {PaymentMapper.class, ReturnMapper.class})
 public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Override
     @Mapping(source = "sender.id", target = "senderId")
@@ -33,6 +35,11 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(source = "shipmentStatus.name", target = "shipmentStatusName")
     @Mapping(target = "originLocationName", source = "entity", qualifiedByName = "resolveOriginName")
     @Mapping(target = "destinationLocationName", source = "entity", qualifiedByName = "resolveDestinationName")
+    @Mapping(source = "payments", target = "payments")
+    @Mapping(source = "returns", target = "returns")
+    @Mapping(target = "totalPaidAmount", source = "entity", qualifiedByName = "calculateTotalPaid")
+    @Mapping(target = "remainingAmount", source = "entity", qualifiedByName = "calculateRemaining")
+    @Mapping(target = "isFullyPaid", source = "entity", qualifiedByName = "calculateIsFullyPaid")
     ShipmentDto toDto(Shipment entity);
 
     @Override
@@ -57,7 +64,38 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(target = "destinationDeliveryPoint", ignore = true)
     @Mapping(target = "originAddress", ignore = true)
     @Mapping(target = "destinationAddress", ignore = true)
+    @Mapping(target = "payments", ignore = true)
+    @Mapping(target = "returns", ignore = true)
     Shipment toEntity(ShipmentDto dto);
+
+    @Named("calculateTotalPaid")
+    default BigDecimal calculateTotalPaid(Shipment entity) {
+        if (entity.getPayments() == null || entity.getPayments().isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return entity.getPayments().stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Named("calculateRemaining")
+    default BigDecimal calculateRemaining(Shipment entity) {
+        BigDecimal totalPaid = calculateTotalPaid(entity);
+        BigDecimal totalPrice = (entity.getPrice() != null && entity.getPrice().getTotal() != null)
+                ? entity.getPrice().getTotal() : BigDecimal.ZERO;
+        return totalPrice.subtract(totalPaid);
+    }
+
+    @Named("calculateIsFullyPaid")
+    default Boolean calculateIsFullyPaid(Shipment entity) {
+        BigDecimal totalPaid = calculateTotalPaid(entity);
+        BigDecimal totalPrice = (entity.getPrice() != null && entity.getPrice().getTotal() != null)
+                ? entity.getPrice().getTotal() : BigDecimal.ZERO;
+
+        if (totalPrice.compareTo(BigDecimal.ZERO) == 0) return true;
+
+        return totalPaid.compareTo(totalPrice) >= 0;
+    }
 
     @Named("resolveOriginName")
     default String resolveOriginName(Shipment shipment) {

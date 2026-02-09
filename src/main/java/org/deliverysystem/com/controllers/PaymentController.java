@@ -2,7 +2,7 @@ package org.deliverysystem.com.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.deliverysystem.com.dtos.PaymentDto;
+import org.deliverysystem.com.dtos.payments.PaymentDto;
 import org.deliverysystem.com.services.impl.PaymentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

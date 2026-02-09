@@ -10,7 +10,6 @@ import org.deliverysystem.com.dtos.shipments.ShipmentMovementDto;
 import org.deliverysystem.com.dtos.shipments.ShipmentStatisticsDto;
 import org.deliverysystem.com.services.impl.ShipmentService;
 import org.deliverysystem.com.utils.RestPage;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

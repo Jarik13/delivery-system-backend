@@ -1,10 +1,14 @@
 package org.deliverysystem.com.dtos.shipments;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.deliverysystem.com.dtos.payments.PaymentDto;
+import org.deliverysystem.com.dtos.returns.ReturnDto;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
-@Schema(description = "Відправлення (документ)")
+@Schema(description = "Відправлення (документ) з фінансовими даними")
 public record ShipmentDto(
         Integer id,
         String trackingNumber,
@@ -18,6 +22,15 @@ public record ShipmentDto(
         BigDecimal specialPackagingPrice,
         BigDecimal insuranceFee,
         BigDecimal totalPrice,
+
+        @Schema(description = "Скільки всього фактично оплачено")
+        BigDecimal totalPaidAmount,
+
+        @Schema(description = "Скільки залишилося оплатити")
+        BigDecimal remainingAmount,
+
+        @Schema(description = "Чи оплачено повністю")
+        Boolean isFullyPaid,
 
         Boolean isSenderPay,
         Boolean isPartiallyPaid,
@@ -37,5 +50,11 @@ public record ShipmentDto(
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String createdByFullName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String originLocationName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String destinationLocationName,
-        @Schema(accessMode = Schema.AccessMode.READ_ONLY) BigDecimal actualWeight
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY) BigDecimal actualWeight,
+
+        @Schema(description = "Список усіх платежів по цьому відправленню")
+        List<PaymentDto> payments,
+
+        @Schema(description = "Дані про всі повернення (якщо є)")
+        List<ReturnDto> returns
 ) {}

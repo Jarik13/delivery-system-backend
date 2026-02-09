@@ -72,6 +72,12 @@ public class Shipment {
     @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL)
     private List<RouteSheetItem> routeSheetItems = new ArrayList<>();
 
+    @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL)
+    private List<Payment> payments;
+
+    @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL)
+    private List<Return> returns;
+
     @CreatedBy
     @ManyToOne
     @JoinColumn(name = "created_by_id")
