@@ -49,7 +49,9 @@ public record ShipmentDto(
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String shipmentStatusName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String createdByFullName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String originLocationName,
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY) String originCityName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String destinationLocationName,
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY) String destinationCityName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) BigDecimal actualWeight,
 
         @Schema(description = "Список усіх платежів по цьому відправленню")

@@ -113,50 +113,103 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "shipmentMovements", key = "#shipmentId")
     public List<ShipmentMovementDto> getShipmentHistory(Integer shipmentId) {
-        Shipment shipment = shipmentRepository.findById(shipmentId).orElseThrow();
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Shipment not found"));
         List<ShipmentMovementDto> history = new ArrayList<>();
 
-        if (shipment.getOriginDeliveryPoint() != null) {
+        if (shipment.getOriginDeliveryPoint() != null && shipment.getOriginDeliveryPoint().getDeliveryPoint() != null) {
             history.add(new ShipmentMovementDto(
                     shipment.getCreatedAt(),
+                    shipment.getOriginDeliveryPoint().getDeliveryPoint().getCity().getName(),
                     shipment.getOriginDeliveryPoint().getDeliveryPoint().getName(),
                     "Прийнято до відправлення"
             ));
         }
 
-        shipment.getShipmentWaybills().forEach(sw -> {
-            sw.getWaybill().getWaybillRoutes().forEach(wr -> {
-                if (wr.getTrip().getActualArrivalTime() != null) {
+        if (shipment.getShipmentWaybills() != null) {
+            shipment.getShipmentWaybills().forEach(sw -> {
+                if (sw.getWaybill() != null && sw.getWaybill().getWaybillRoutes() != null) {
+                    sw.getWaybill().getWaybillRoutes().forEach(wr -> {
+                        if (wr.getTrip() != null && wr.getTrip().getActualArrivalTime() != null
+                            && wr.getRoute() != null
+                            && wr.getRoute().getDestinationBranch() != null
+                            && wr.getRoute().getDestinationBranch().getDeliveryPoint() != null) {
+
+                            history.add(new ShipmentMovementDto(
+                                    wr.getTrip().getActualArrivalTime(),
+                                    wr.getRoute().getDestinationBranch().getDeliveryPoint().getCity().getName(),
+                                    wr.getRoute().getDestinationBranch().getDeliveryPoint().getName(),
+                                    "Прибуло на транзитний вузол"
+                            ));
+                        }
+                    });
+                }
+            });
+        }
+
+        if (shipment.getRouteSheetItems() != null) {
+            shipment.getRouteSheetItems().forEach(item -> {
+                if (item.getDeliveredAt() != null) {
+                    String cityName = "";
+                    String fullAddress = "Адреса отримувача";
+
+                    if (shipment.getDestinationAddress() != null && shipment.getDestinationAddress().getAddress() != null) {
+
+                        var addr = shipment.getDestinationAddress().getAddress();
+                        var house = addr.getHouse();
+
+                        if (house != null && house.getStreet() != null && house.getStreet().getCity() != null) {
+                            cityName = house.getStreet().getCity().getName();
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+
+                        if (house != null && house.getStreet() != null) {
+                            sb.append(house.getStreet().getName());
+                        }
+
+                        if (house != null && house.getNumber() != null) {
+                            if (sb.length() > 0) sb.append(", ");
+                            sb.append("буд. ").append(house.getNumber());
+                        }
+
+                        if (addr.getApartmentNumber() != null) {
+                            if (sb.length() > 0) sb.append(", ");
+                            sb.append("кв. ").append(addr.getApartmentNumber());
+                        }
+
+                        if (sb.length() > 0) {
+                            fullAddress = sb.toString();
+                        }
+                    }
+
                     history.add(new ShipmentMovementDto(
-                            wr.getTrip().getActualArrivalTime(),
-                            wr.getRoute().getDestinationBranch().getDeliveryPoint().getName(),
-                            "Прибуло на транзитний вузол"
+                            item.getDeliveredAt(),
+                            cityName,
+                            fullAddress,
+                            "Доставлено кур'єром"
                     ));
                 }
             });
-        });
-
-        shipment.getRouteSheetItems().forEach(item -> {
-            if (item.getDeliveredAt() != null) {
-                history.add(new ShipmentMovementDto(
-                        item.getDeliveredAt(),
-                        "Адреса отримувача",
-                        "Доставлено кур'єром"
-                ));
-            }
-        });
-
-        if (shipment.getIssuedAt() != null) {
-            history.add(new ShipmentMovementDto(
-                    shipment.getIssuedAt(),
-                    shipment.getDestinationDeliveryPoint().getDeliveryPoint().getName(),
-                    "Отримано клієнтом"
-            ));
         }
 
-        return history.stream().sorted(Comparator.comparing(ShipmentMovementDto::time)).toList();
+        if (shipment.getIssuedAt() != null) {
+            String locationName = "Відділення отримання";
+            String cityName = "";
+
+            if (shipment.getDestinationDeliveryPoint() != null && shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null) {
+                locationName = shipment.getDestinationDeliveryPoint().getDeliveryPoint().getName();
+
+                if (shipment.getDestinationDeliveryPoint().getDeliveryPoint().getCity() != null) {
+                    cityName = shipment.getDestinationDeliveryPoint().getDeliveryPoint().getCity().getName();
+                }
+            }
+        }
+
+        return history.stream()
+                .sorted(Comparator.comparing(ShipmentMovementDto::time))
+                .toList();
     }
 
     private BigDecimal defaultIfNull(BigDecimal value, BigDecimal defaultValue) {

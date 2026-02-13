@@ -34,7 +34,9 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(source = "shipmentType.name", target = "shipmentTypeName")
     @Mapping(source = "shipmentStatus.name", target = "shipmentStatusName")
     @Mapping(target = "originLocationName", source = "entity", qualifiedByName = "resolveOriginName")
+    @Mapping(target = "originCityName", source = "entity", qualifiedByName = "resolveOriginCity")
     @Mapping(target = "destinationLocationName", source = "entity", qualifiedByName = "resolveDestinationName")
+    @Mapping(target = "destinationCityName", source = "entity", qualifiedByName = "resolveDestinationCity")
     @Mapping(source = "payments", target = "payments")
     @Mapping(source = "returns", target = "returns")
     @Mapping(target = "totalPaidAmount", source = "entity", qualifiedByName = "calculateTotalPaid")
@@ -117,6 +119,42 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
             return formatAddress(shipment.getDestinationAddress().getAddress());
         }
         return "Не вказано";
+    }
+
+    @Named("resolveOriginCity")
+    default String resolveOriginCity(Shipment shipment) {
+        if (shipment.getOriginDeliveryPoint() != null &&
+            shipment.getOriginDeliveryPoint().getDeliveryPoint() != null &&
+            shipment.getOriginDeliveryPoint().getDeliveryPoint().getCity() != null) {
+            return shipment.getOriginDeliveryPoint().getDeliveryPoint().getCity().getName();
+        }
+
+        if (shipment.getOriginAddress() != null &&
+            shipment.getOriginAddress().getAddress() != null &&
+            shipment.getOriginAddress().getAddress().getHouse() != null &&
+            shipment.getOriginAddress().getAddress().getHouse().getStreet() != null &&
+            shipment.getOriginAddress().getAddress().getHouse().getStreet().getCity() != null) {
+            return shipment.getOriginAddress().getAddress().getHouse().getStreet().getCity().getName();
+        }
+        return "";
+    }
+
+    @Named("resolveDestinationCity")
+    default String resolveDestinationCity(Shipment shipment) {
+        if (shipment.getDestinationDeliveryPoint() != null &&
+            shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null &&
+            shipment.getDestinationDeliveryPoint().getDeliveryPoint().getCity() != null) {
+            return shipment.getDestinationDeliveryPoint().getDeliveryPoint().getCity().getName();
+        }
+
+        if (shipment.getDestinationAddress() != null &&
+            shipment.getDestinationAddress().getAddress() != null &&
+            shipment.getDestinationAddress().getAddress().getHouse() != null &&
+            shipment.getDestinationAddress().getAddress().getHouse().getStreet() != null &&
+            shipment.getDestinationAddress().getAddress().getHouse().getStreet().getCity() != null) {
+            return shipment.getDestinationAddress().getAddress().getHouse().getStreet().getCity().getName();
+        }
+        return "";
     }
 
     default String formatAddress(Address addr) {
