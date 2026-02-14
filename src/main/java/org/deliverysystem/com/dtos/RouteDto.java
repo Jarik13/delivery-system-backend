@@ -2,6 +2,7 @@ package org.deliverysystem.com.dtos;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import org.deliverysystem.com.annotations.DifferentBranches;
 
 @DifferentBranches
@@ -31,5 +32,9 @@ public record RouteDto(
         String destinationCityName,
 
         @Schema(description = "Чи потрібне сортування на маршруті", example = "false")
-        Boolean needSorting
+        Boolean needSorting,
+
+        @Positive(message = "Відстань повинна бути більшою за нуль")
+        @Schema(description = "Відстань маршруту в кілометрах", example = "450.5")
+        Float distanceKm
 ) {}
