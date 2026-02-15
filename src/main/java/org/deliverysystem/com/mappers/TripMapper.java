@@ -3,13 +3,16 @@ package org.deliverysystem.com.mappers;
 import org.deliverysystem.com.dtos.TripDto;
 import org.deliverysystem.com.entities.Driver;
 import org.deliverysystem.com.entities.Trip;
+import org.deliverysystem.com.entities.Waybill;
 import org.deliverysystem.com.entities.WaybillRoute;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 @Mapper(componentModel = "spring")
 public interface TripMapper extends GenericMapper<Trip, TripDto> {
@@ -25,6 +28,8 @@ public interface TripMapper extends GenericMapper<Trip, TripDto> {
     @Mapping(target = "destinationCity", source = "entity", qualifiedByName = "resolveDestinationCity")
     @Mapping(target = "shipmentsCount", source = "entity", qualifiedByName = "calculateShipments")
     @Mapping(target = "waypoints", source = "entity", qualifiedByName = "resolveWaypoints")
+    @Mapping(target = "totalWeight", source = "entity", qualifiedByName = "calculateTotalWeight")
+    @Mapping(target = "distanceKm", source = "entity", qualifiedByName = "calculateTotalDistance")
     TripDto toDto(Trip entity);
 
     @Override
@@ -84,5 +89,27 @@ public interface TripMapper extends GenericMapper<Trip, TripDto> {
         return trip.getWaybillRoutes().stream()
                 .map(wr -> wr.getRoute().getDestinationBranch().getDeliveryPoint().getCity().getName())
                 .toList();
+    }
+
+    @Named("calculateTotalWeight")
+    default BigDecimal calculateTotalWeight(Trip trip) {
+        if (trip.getWaybillRoutes() == null) return BigDecimal.ZERO;
+        return trip.getWaybillRoutes().stream()
+                .map(WaybillRoute::getWaybill)
+                .filter(Objects::nonNull)
+                .map(Waybill::getTotalWeight)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Named("calculateTotalDistance")
+    default Float calculateTotalDistance(Trip trip) {
+        if (trip.getWaybillRoutes() == null) return 0f;
+        double total = trip.getWaybillRoutes().stream()
+                .map(WaybillRoute::getRoute)
+                .filter(Objects::nonNull)
+                .mapToDouble(route -> route.getDistanceKm() != null ? route.getDistanceKm() : 0.0)
+                .sum();
+        return (float) total;
     }
 }
