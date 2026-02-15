@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.BranchDto;
 import org.deliverysystem.com.dtos.search.BranchSearchCriteria;
 import org.deliverysystem.com.services.impl.BranchService;
@@ -16,21 +17,18 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/branches")
+@RequiredArgsConstructor
 @Tag(name = "Branches", description = "Управління відділеннями")
 public class BranchController {
     private final BranchService branchService;
 
-    public BranchController(BranchService branchService) {
-        this.branchService = branchService;
-    }
-
     @Operation(summary = "Отримати відділення (з фільтрацією та пагінацією)")
     @GetMapping
     public ResponseEntity<Page<BranchDto>> getAll(
-            @ParameterObject BranchSearchCriteria searchCriteria,
+            @ParameterObject BranchSearchCriteria criteria,
             @ParameterObject Pageable pageable
     ) {
-        return ResponseEntity.ok(branchService.findAll(searchCriteria, pageable));
+        return ResponseEntity.ok(branchService.findAll(criteria, pageable));
     }
 
     @Operation(summary = "Знайти відділення за містом")

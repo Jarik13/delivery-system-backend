@@ -11,7 +11,6 @@ import org.deliverysystem.com.dtos.search.ParcelSearchCriteria;
 import org.deliverysystem.com.services.impl.ParcelService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,18 +18,18 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/parcels")
-@Tag(name = "Parcels", description = "Управління посилками (параметри та умови зберігання)")
 @RequiredArgsConstructor
+@Tag(name = "Parcels", description = "Управління посилками (параметри та умови зберігання)")
 public class ParcelController {
     private final ParcelService parcelService;
 
     @Operation(summary = "Отримати всі посилки (з фільтрацією за вагою, вартістю та типом)")
     @GetMapping
     public ResponseEntity<RestPage<ParcelDto>> getAll(
-            @ParameterObject ParcelSearchCriteria searchCriteria,
+            @ParameterObject ParcelSearchCriteria criteria,
             @ParameterObject Pageable pageable
     ) {
-        return ResponseEntity.ok(parcelService.findAll(searchCriteria, pageable));
+        return ResponseEntity.ok(parcelService.findAll(criteria, pageable));
     }
 
     @Operation(summary = "Отримати статистику по посилках (мін/макс значення)")

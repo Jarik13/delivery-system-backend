@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.RouteDto;
 import org.deliverysystem.com.dtos.search.RouteSearchCriteria;
 import org.deliverysystem.com.services.impl.RouteService;
@@ -16,21 +17,18 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/routes")
+@RequiredArgsConstructor
 @Tag(name = "Routes", description = "Шаблони магістральних маршрутів")
 public class RouteController {
     private final RouteService routeService;
 
-    public RouteController(RouteService routeService) {
-        this.routeService = routeService;
-    }
-
     @Operation(summary = "Отримати маршрути (з фільтрацією та пагінацією)")
     @GetMapping
     public ResponseEntity<Page<RouteDto>> getAll(
-            @ParameterObject RouteSearchCriteria searchCriteria,
+            @ParameterObject RouteSearchCriteria criteria,
             @ParameterObject Pageable pageable
     ) {
-        return ResponseEntity.ok(routeService.findAll(searchCriteria, pageable));
+        return ResponseEntity.ok(routeService.findAll(criteria, pageable));
     }
 
     @Operation(summary = "Знайти маршрути, що виїжджають з відділення")
