@@ -4,13 +4,10 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
-import org.deliverysystem.com.dtos.shipments.ShipmentDto;
-import org.deliverysystem.com.dtos.shipments.ShipmentMovementDto;
-import org.deliverysystem.com.dtos.shipments.ShipmentStatisticsDto;
-import org.deliverysystem.com.entities.Shipment;
-import org.deliverysystem.com.entities.Trip;
+import org.deliverysystem.com.dtos.shipments.*;
+import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.mappers.ShipmentMapper;
-import org.deliverysystem.com.repositories.ShipmentRepository;
+import org.deliverysystem.com.repositories.*;
 import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
 import org.springframework.cache.annotation.CacheEvict;
@@ -22,23 +19,208 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, Integer> {
     private final ShipmentRepository shipmentRepository;
+    private final ParcelRepository parcelRepository;
+    private final ClientRepository clientRepository;
+    private final ShipmentStatusRepository statusRepository;
+    private final ShipmentTypeRepository typeRepository;
+    private final StorageConditionRepository storageConditionRepository;
+    private final BoxVariantRepository boxVariantRepository;
+    private final DeliveryPointRepository deliveryPointRepository;
+    private final PaymentRepository paymentRepository;
+    private final ParcelTypeRepository parcelTypeRepository;
 
-    public ShipmentService(ShipmentRepository repo, ShipmentMapper mapper) {
+    private final ShipmentBoxRepository shipmentBoxRepository;
+    private final ShipmentOriginDeliveryPointRepository originDeliveryPointRepository;
+    private final ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository;
+    private final ShipmentOriginAddressRepository originAddressRepository;
+    private final ShipmentDestinationAddressRepository destinationAddressRepository;
+
+    private final StreetRepository streetRepository;
+    private final AddressHouseRepository addressHouseRepository;
+    private final AddressRepository addressRepository;
+
+    public ShipmentService(ShipmentRepository repo, ShipmentMapper mapper,
+                           ParcelRepository parcelRepository, ClientRepository clientRepository,
+                           ShipmentStatusRepository statusRepository, ShipmentTypeRepository typeRepository,
+                           StorageConditionRepository storageConditionRepository, BoxVariantRepository boxVariantRepository, DeliveryPointRepository deliveryPointRepository,
+                           PaymentRepository paymentRepository, ParcelTypeRepository parcelTypeRepository, ShipmentBoxRepository shipmentBoxRepository,
+                           ShipmentOriginDeliveryPointRepository originDeliveryPointRepository, ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository, ShipmentOriginAddressRepository originAddressRepository,
+                           ShipmentDestinationAddressRepository destinationAddressRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository) {
         super(mapper, repo);
         this.shipmentRepository = repo;
+        this.parcelRepository = parcelRepository;
+        this.clientRepository = clientRepository;
+        this.statusRepository = statusRepository;
+        this.typeRepository = typeRepository;
+        this.storageConditionRepository = storageConditionRepository;
+        this.boxVariantRepository = boxVariantRepository;
+        this.deliveryPointRepository = deliveryPointRepository;
+        this.paymentRepository = paymentRepository;
+        this.parcelTypeRepository = parcelTypeRepository;
+
+        this.shipmentBoxRepository = shipmentBoxRepository;
+        this.originDeliveryPointRepository = originDeliveryPointRepository;
+        this.destinationDeliveryPointRepository = destinationDeliveryPointRepository;
+        this.originAddressRepository = originAddressRepository;
+        this.destinationAddressRepository = destinationAddressRepository;
+
+        this.streetRepository = streetRepository;
+        this.addressHouseRepository = addressHouseRepository;
+        this.addressRepository = addressRepository;
     }
 
-    @Override
+    public CalculatedPriceResponseDto calculatePrices(ShipmentPriceCalculationRequestDto req) {
+        ShipmentType type = typeRepository.findById(req.shipmentTypeId())
+                .orElseThrow(() -> new EntityNotFoundException("Type not found"));
+
+        BigDecimal deliveryPrice = type.getName().toLowerCase().contains("експрес")
+                ? new BigDecimal("85.00") : new BigDecimal("60.00");
+
+        BigDecimal weightPrice = req.actualWeight().multiply(new BigDecimal("3.5"))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal distancePrice = new BigDecimal("300").multiply(new BigDecimal("0.8"))
+                .min(new BigDecimal("500.00"))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal boxPrice = BigDecimal.ZERO;
+        if (req.boxVariantId() != null) {
+            boxPrice = boxVariantRepository.findById(req.boxVariantId())
+                    .map(BoxVariant::getPrice).orElse(BigDecimal.ZERO);
+        }
+
+        BigDecimal specialPackaging = (req.storageConditionIds() != null && !req.storageConditionIds().isEmpty())
+                ? new BigDecimal("45.00") : BigDecimal.ZERO;
+
+        BigDecimal insuranceFee = req.declaredValue().multiply(new BigDecimal("0.005"))
+                .max(new BigDecimal("5.00"))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal total = deliveryPrice.add(weightPrice).add(distancePrice)
+                .add(boxPrice).add(specialPackaging).add(insuranceFee);
+
+        return new CalculatedPriceResponseDto(
+                deliveryPrice, weightPrice, distancePrice, boxPrice, specialPackaging, insuranceFee, total
+        );
+    }
+
+    @Transactional
     @CacheEvict(value = {"shipmentPages", "shipmentStatistics"}, allEntries = true)
-    public ShipmentDto create(ShipmentDto dto) {
-        return super.create(dto);
+    public ShipmentDto createComplexShipment(CreateShipmentDto dto) {
+        Parcel parcel = new Parcel();
+        parcel.setActualWeight(dto.actualWeight());
+        parcel.setDeclaredValue(dto.declaredValue());
+        parcel.setContentDescription(dto.contentDescription());
+        parcel.setParcelType(parcelTypeRepository.getReferenceById(dto.parcelTypeId()));
+
+        if (dto.storageConditionIds() != null && !dto.storageConditionIds().isEmpty()) {
+            parcel.setStorageConditions(new HashSet<>(storageConditionRepository.findAllById(dto.storageConditionIds())));
+        }
+        parcel = parcelRepository.save(parcel);
+
+        Shipment shipment = new Shipment();
+        shipment.setTrackingNumber("59" + System.currentTimeMillis() / 1000);
+        shipment.setParcel(parcel);
+        shipment.setSender(clientRepository.getReferenceById(dto.senderId()));
+        shipment.setRecipient(clientRepository.getReferenceById(dto.recipientId()));
+        shipment.setShipmentType(typeRepository.getReferenceById(dto.shipmentTypeId()));
+        shipment.setShipmentStatus(statusRepository.getReferenceById(1));
+
+        CalculatedPriceResponseDto p = calculatePrices(new ShipmentPriceCalculationRequestDto(
+                dto.actualWeight(), dto.declaredValue(), dto.parcelTypeId(),
+                dto.storageConditionIds(), dto.boxVariantId(), dto.shipmentTypeId(), 0, 0));
+
+        Price price = new Price();
+        price.setDelivery(p.deliveryPrice());
+        price.setWeight(p.weightPrice());
+        price.setDistance(p.distancePrice());
+        price.setBoxVariant(p.boxVariantPrice());
+        price.setSpecialPackaging(p.specialPackagingPrice());
+        price.setInsuranceFee(p.insuranceFee());
+        price.setTotal(p.totalPrice());
+
+        shipment.setPrice(price);
+
+        shipment.setSenderPay(dto.isSenderPay());
+        shipment.setPartiallyPaid(dto.isPartiallyPaid());
+        shipment.setCreatedAt(LocalDateTime.now());
+
+        Shipment saved = shipmentRepository.save(shipment);
+
+        saveBridgeLocations(saved, dto.origin(), dto.destination());
+
+        if (dto.boxVariantId() != null) {
+            ShipmentBox sb = new ShipmentBox();
+            sb.setShipment(saved);
+            sb.setBoxVariant(boxVariantRepository.getReferenceById(dto.boxVariantId()));
+            shipmentBoxRepository.save(sb);
+        }
+
+        if (dto.isPartiallyPaid() && dto.partialAmount() != null) {
+            Payment payment = new Payment();
+            payment.setShipment(saved);
+            payment.setAmount(dto.partialAmount());
+            payment.setDate(LocalDateTime.now());
+            payment.setTransactionNumber("PRE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            paymentRepository.save(payment);
+        }
+
+        return mapper.toDto(saved);
+    }
+
+    private void saveBridgeLocations(Shipment s, RouteLocationDto origin, RouteLocationDto dest) {
+        if ("ADDRESS".equalsIgnoreCase(origin.type())) {
+            Address address = getOrCreateAddress(origin.streetId(), origin.houseNumber(), origin.apartmentNumber());
+
+            ShipmentOriginAddress soa = new ShipmentOriginAddress();
+            soa.setShipment(s);
+            soa.setAddress(address);
+            originAddressRepository.save(soa);
+        } else {
+            ShipmentOriginDeliveryPoint op = new ShipmentOriginDeliveryPoint();
+            op.setShipment(s);
+            op.setDeliveryPoint(deliveryPointRepository.getReferenceById(origin.deliveryPointId()));
+            originDeliveryPointRepository.save(op);
+        }
+
+        if ("ADDRESS".equalsIgnoreCase(dest.type())) {
+            Address address = getOrCreateAddress(dest.streetId(), dest.houseNumber(), dest.apartmentNumber());
+
+            ShipmentDestinationAddress sda = new ShipmentDestinationAddress();
+            sda.setShipment(s);
+            sda.setAddress(address);
+            destinationAddressRepository.save(sda);
+        } else {
+            ShipmentDestinationDeliveryPoint dp = new ShipmentDestinationDeliveryPoint();
+            dp.setShipment(s);
+            dp.setDeliveryPoint(deliveryPointRepository.getReferenceById(dest.deliveryPointId()));
+            destinationDeliveryPointRepository.save(dp);
+        }
+    }
+
+    private Address getOrCreateAddress(Integer streetId, String houseNumber, Integer apartmentNumber) {
+        AddressHouse house = addressHouseRepository.findByStreetIdAndNumber(streetId, houseNumber)
+                .orElseGet(() -> {
+                    AddressHouse newHouse = new AddressHouse();
+                    newHouse.setStreet(streetRepository.getReferenceById(streetId));
+                    newHouse.setNumber(houseNumber);
+                    return addressHouseRepository.save(newHouse);
+                });
+
+        return addressRepository.findByHouseIdAndApartmentNumber(house.getId(), apartmentNumber)
+                .orElseGet(() -> {
+                    Address newAddr = new Address();
+                    newAddr.setHouse(house);
+                    newAddr.setApartmentNumber(apartmentNumber);
+                    return addressRepository.save(newAddr);
+                });
     }
 
     @Override

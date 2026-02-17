@@ -5,9 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
-import org.deliverysystem.com.dtos.shipments.ShipmentDto;
-import org.deliverysystem.com.dtos.shipments.ShipmentMovementDto;
-import org.deliverysystem.com.dtos.shipments.ShipmentStatisticsDto;
+import org.deliverysystem.com.dtos.shipments.*;
 import org.deliverysystem.com.services.impl.ShipmentService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springframework.data.domain.Pageable;
@@ -48,10 +46,16 @@ public class ShipmentController {
         return ResponseEntity.ok(shipmentService.findById(id));
     }
 
+    @Operation(summary = "Розрахувати вартість доставки (Тарифікація)")
+    @PostMapping("/calculate")
+    public ResponseEntity<CalculatedPriceResponseDto> calculate(@Valid @RequestBody ShipmentPriceCalculationRequestDto request) {
+        return ResponseEntity.ok(shipmentService.calculatePrices(request));
+    }
+
     @Operation(summary = "Створити нове відправлення (ТТН)")
     @PostMapping
-    public ResponseEntity<ShipmentDto> create(@Valid @RequestBody ShipmentDto dto) {
-        return new ResponseEntity<>(shipmentService.create(dto), HttpStatus.CREATED);
+    public ResponseEntity<ShipmentDto> create(@Valid @RequestBody CreateShipmentDto dto) {
+        return new ResponseEntity<>(shipmentService.createComplexShipment(dto), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Оновити існуюче відправлення")
