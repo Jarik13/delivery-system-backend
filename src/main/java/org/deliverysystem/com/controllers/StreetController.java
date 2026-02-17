@@ -22,7 +22,7 @@ public class StreetController extends AbstractBaseController<StreetDto, Integer>
     }
 
     @Operation(summary = "Отримати вулиці міста (з пагінацією)")
-    @GetMapping("cityId")
+    @GetMapping(params = "cityId")
     public ResponseEntity<RestPage<StreetDto>> getByCityId(@RequestParam Integer cityId, Pageable pageable) {
         return ResponseEntity.ok(streetService.findAllByCityId(cityId, pageable));
     }
