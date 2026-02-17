@@ -10,6 +10,7 @@ public interface PostomatMapper extends GenericMapper<Postomat, PostomatDto> {
     @Override
     @Mapping(source = "deliveryPoint.name", target = "name")
     @Mapping(source = "deliveryPoint.address", target = "address")
+    @Mapping(source = "deliveryPoint.id", target = "deliveryPointId")
     @Mapping(source = "deliveryPoint.city.id", target = "cityId")
     @Mapping(source = "deliveryPoint.city.name", target = "cityName")
     PostomatDto toDto(Postomat entity);

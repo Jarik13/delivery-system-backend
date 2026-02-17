@@ -37,5 +37,9 @@ public record PostomatDto(
         Integer cellsCount,
 
         @Schema(description = "Чи активний")
-        Boolean isActive
-) {}
+        Boolean isActive,
+
+        @Schema(description = "ID базової точки доставки", example = "100", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer deliveryPointId
+) {
+}

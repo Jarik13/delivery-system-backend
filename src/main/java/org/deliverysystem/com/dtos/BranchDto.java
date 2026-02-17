@@ -32,5 +32,8 @@ public record BranchDto(
         Integer branchTypeId,
 
         @Schema(description = "Назва типу відділення", example = "Вантажне", accessMode = Schema.AccessMode.READ_ONLY)
-        String branchTypeName
+        String branchTypeName,
+
+        @Schema(description = "ID базової точки доставки", example = "100", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer deliveryPointId
 ) {}
