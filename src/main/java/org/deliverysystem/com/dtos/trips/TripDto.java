@@ -1,4 +1,4 @@
-package org.deliverysystem.com.dtos;
+package org.deliverysystem.com.dtos.trips;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -48,5 +48,15 @@ public record TripDto(
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) Integer shipmentsCount,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) BigDecimal totalWeight,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) Integer distanceKm,
-        @Schema(accessMode = Schema.AccessMode.READ_ONLY) List<String> waypoints
-) {}
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY) List<String> waypoints,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        CoordinateDto originCoordinates,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        CoordinateDto destinationCoordinates,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        List<WaypointCoordinateDto> waypointCoordinates
+) {
+}

@@ -1,6 +1,6 @@
 package org.deliverysystem.com.services.impl;
 
-import org.deliverysystem.com.dtos.TripDto;
+import org.deliverysystem.com.dtos.trips.TripDto;
 import org.deliverysystem.com.dtos.search.TripSearchCriteria;
 import org.deliverysystem.com.entities.Trip;
 import org.deliverysystem.com.mappers.TripMapper;
