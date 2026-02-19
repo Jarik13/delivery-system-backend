@@ -12,12 +12,19 @@ public class SpecificationUtils {
         return (root, query, cb) -> null;
     }
 
-    public static <S> Specification<S> iLike(String field, String value) {
-        if (value == null || value.trim().isEmpty()) {
+    public static <S> Specification<S> iLike(String field, Object value) {
+        if (value == null) {
             return empty();
         }
+
+        String stringValue = String.valueOf(value).trim();
+
+        if (stringValue.isEmpty()) {
+            return empty();
+        }
+
         return (root, query, cb) ->
-                cb.like(cb.lower(getPath(root, field).as(String.class)), "%" + value.toLowerCase() + "%");
+                cb.like(cb.lower(getPath(root, field).as(String.class)), "%" + stringValue.toLowerCase() + "%");
     }
 
     public static <S, T extends Comparable<? super T>> Specification<S> gte(String field, T value) {
