@@ -1,6 +1,7 @@
 package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.JoinType;
 import org.deliverysystem.com.dtos.trips.CreateTripDto;
 import org.deliverysystem.com.dtos.trips.TripDto;
 import org.deliverysystem.com.dtos.search.TripSearchCriteria;
@@ -125,6 +126,9 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                 .and(SpecificationUtils.equal("status.id", criteria.tripStatusId()))
                 .and(SpecificationUtils.equal("driver.id", criteria.driverId()))
                 .and(SpecificationUtils.equal("vehicle.id", criteria.vehicleId()))
+                .and(originCitySpec(criteria.originCity()))
+                .and(destinationCitySpec(criteria.destinationCity()))
+                .and(anyCitySpec(criteria.anyCity()))
                 .and(SpecificationUtils.gte("scheduledDepartureTime", criteria.scheduledDepartureFrom()))
                 .and(SpecificationUtils.lte("scheduledDepartureTime", criteria.scheduledDepartureTo()))
                 .and(SpecificationUtils.gte("actualDepartureTime", criteria.actualDepartureFrom()))
@@ -136,5 +140,51 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
 
         Page<TripDto> result = tripRepository.findAll(spec, pageable).map(mapper::toDto);
         return new RestPage<>(result);
+    }
+
+    private Specification<Trip> originCitySpec(String cityName) {
+        if (cityName == null || cityName.isBlank()) return (r, q, cb) -> null;
+        return (root, query, cb) -> {
+            query.distinct(true);
+            var routes = root.join("waybillRoutes", JoinType.LEFT);
+            var city = routes.join("route", JoinType.LEFT)
+                    .join("originBranch", JoinType.LEFT)
+                    .join("deliveryPoint", JoinType.LEFT)
+                    .join("city", JoinType.LEFT);
+            return cb.like(cb.lower(city.get("name")), "%" + cityName.toLowerCase() + "%");
+        };
+    }
+
+    private Specification<Trip> destinationCitySpec(String cityName) {
+        if (cityName == null || cityName.isBlank()) return (r, q, cb) -> null;
+        return (root, query, cb) -> {
+            query.distinct(true);
+            var routes = root.join("waybillRoutes", JoinType.LEFT);
+            var city = routes.join("route", JoinType.LEFT)
+                    .join("destinationBranch", JoinType.LEFT)
+                    .join("deliveryPoint", JoinType.LEFT)
+                    .join("city", JoinType.LEFT);
+            return cb.like(cb.lower(city.get("name")), "%" + cityName.toLowerCase() + "%");
+        };
+    }
+
+    private Specification<Trip> anyCitySpec(String cityName) {
+        if (cityName == null || cityName.isBlank()) return (r, q, cb) -> null;
+        return (root, query, cb) -> {
+            query.distinct(true);
+            var routes = root.join("waybillRoutes", JoinType.LEFT);
+            var route = routes.join("route", JoinType.LEFT);
+            var originCity = route.join("originBranch", JoinType.LEFT)
+                    .join("deliveryPoint", JoinType.LEFT)
+                    .join("city", JoinType.LEFT);
+            var destCity = route.join("destinationBranch", JoinType.LEFT)
+                    .join("deliveryPoint", JoinType.LEFT)
+                    .join("city", JoinType.LEFT);
+            String pattern = "%" + cityName.toLowerCase() + "%";
+            return cb.or(
+                    cb.like(cb.lower(originCity.get("name")), pattern),
+                    cb.like(cb.lower(destCity.get("name")), pattern)
+            );
+        };
     }
 }

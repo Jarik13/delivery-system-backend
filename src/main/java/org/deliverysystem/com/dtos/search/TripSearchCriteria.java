@@ -17,6 +17,15 @@ public record TripSearchCriteria(
         @Schema(description = "ID транспортного засобу", example = "12")
         Integer vehicleId,
 
+        @Schema(description = "Назва міста відправлення", example = "Львів")
+        String originCity,
+
+        @Schema(description = "Назва міста призначення", example = "Харків")
+        String destinationCity,
+
+        @Schema(description = "Назва будь-якого міста маршруту", example = "Київ")
+        String anyCity,
+
         @Schema(description = "Плановий час виїзду (від)")
         LocalDateTime scheduledDepartureFrom,
 
