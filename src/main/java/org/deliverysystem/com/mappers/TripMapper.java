@@ -37,6 +37,7 @@ public interface TripMapper extends GenericMapper<Trip, TripDto> {
     TripDto toDto(Trip entity);
 
     @Override
+    @Mapping(source = "tripNumber", target = "number")
     @Mapping(source = "tripStatusId", target = "status.id")
     @Mapping(source = "driverId", target = "driver.id")
     @Mapping(source = "vehicleId", target = "vehicle.id")

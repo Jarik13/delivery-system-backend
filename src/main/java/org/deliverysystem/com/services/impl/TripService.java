@@ -51,7 +51,7 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
         }
 
         Specification<Trip> spec = Specification.where(
-                        SpecificationUtils.<Trip>equal("tripNumber", criteria.tripNumber())
+                        SpecificationUtils.<Trip>iLike("number", String.valueOf(criteria.tripNumber()))
                 )
                 .and(SpecificationUtils.equal("status.id", criteria.tripStatusId()))
                 .and(SpecificationUtils.equal("driver.id", criteria.driverId()))

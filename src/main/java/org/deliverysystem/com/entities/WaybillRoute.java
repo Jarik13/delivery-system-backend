@@ -18,6 +18,9 @@ public class WaybillRoute {
     @Column(name = "waybill_route_id")
     private Integer id;
 
+    @Column(name = "trip_sequence_number")
+    private Integer sequenceNumber;
+
     @ManyToOne
     @JoinColumn(name = "waybill_id")
     private Waybill waybill;
