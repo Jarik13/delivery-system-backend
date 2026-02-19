@@ -2,7 +2,9 @@ package org.deliverysystem.com.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.deliverysystem.com.dtos.trips.CreateTripDto;
 import org.deliverysystem.com.dtos.trips.TripDto;
 import org.deliverysystem.com.dtos.search.TripSearchCriteria;
 import org.deliverysystem.com.services.impl.TripService;
@@ -36,8 +38,8 @@ public class TripController {
 
     @PostMapping
     @Operation(summary = "Створити новий рейс")
-    public ResponseEntity<TripDto> create(@RequestBody TripDto dto) {
-        return ResponseEntity.ok(tripService.create(dto));
+    public ResponseEntity<TripDto> create(@Valid @RequestBody CreateTripDto dto) {
+        return ResponseEntity.ok(tripService.createTrip(dto));
     }
 
     @PutMapping("/{id}")

@@ -1,10 +1,16 @@
 package org.deliverysystem.com.services.impl;
 
+import jakarta.persistence.EntityNotFoundException;
+import org.deliverysystem.com.dtos.trips.CreateTripDto;
 import org.deliverysystem.com.dtos.trips.TripDto;
 import org.deliverysystem.com.dtos.search.TripSearchCriteria;
+import org.deliverysystem.com.dtos.trips.WaypointInputDto;
+import org.deliverysystem.com.entities.Branch;
+import org.deliverysystem.com.entities.Route;
 import org.deliverysystem.com.entities.Trip;
+import org.deliverysystem.com.entities.WaybillRoute;
 import org.deliverysystem.com.mappers.TripMapper;
-import org.deliverysystem.com.repositories.TripRepository;
+import org.deliverysystem.com.repositories.*;
 import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
 import org.springframework.cache.annotation.CacheEvict;
@@ -15,19 +21,82 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.List;
+
 @Service
 public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
     private final TripRepository tripRepository;
+    private final RouteRepository routeRepository;
+    private final BranchRepository branchRepository;
+    private final DriverRepository driverRepository;
+    private final VehicleRepository vehicleRepository;
+    private final TripStatusRepository tripStatusRepository;
+    private final WaybillRouteRepository waybillRouteRepository;
 
-    public TripService(TripRepository repository, TripMapper mapper) {
+    public TripService(TripRepository repository, TripMapper mapper,
+                       RouteRepository routeRepository,
+                       BranchRepository branchRepository,
+                       DriverRepository driverRepository,
+                       VehicleRepository vehicleRepository,
+                       TripStatusRepository tripStatusRepository,
+                       WaybillRouteRepository waybillRouteRepository) {
         super(mapper, repository);
         this.tripRepository = repository;
+        this.routeRepository = routeRepository;
+        this.branchRepository = branchRepository;
+        this.driverRepository = driverRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.tripStatusRepository = tripStatusRepository;
+        this.waybillRouteRepository = waybillRouteRepository;
     }
 
-    @Override
+    @Transactional
     @CacheEvict(value = "tripPages", allEntries = true)
-    public TripDto create(TripDto dto) {
-        return super.create(dto);
+    public TripDto createTrip(CreateTripDto dto) {
+        Trip trip = new Trip();
+        trip.setDriver(driverRepository.getReferenceById(dto.driverId()));
+        trip.setVehicle(vehicleRepository.getReferenceById(dto.vehicleId()));
+        trip.setScheduledDepartureTime(dto.scheduledDepartureTime());
+        trip.setScheduledArrivalTime(dto.scheduledArrivalTime());
+        trip.setStatus(tripStatusRepository.getReferenceById(1));
+
+        Trip saved = tripRepository.save(trip);
+
+        if (dto.waypoints() != null && dto.waypoints().size() >= 2) {
+            List<WaypointInputDto> sorted = dto.waypoints().stream()
+                    .sorted(Comparator.comparing(WaypointInputDto::sequenceNumber))
+                    .toList();
+
+            for (int i = 0; i < sorted.size() - 1; i++) {
+                Integer fromCityId = sorted.get(i).cityId();
+                Integer toCityId = sorted.get(i + 1).cityId();
+
+                Branch originBranch = branchRepository.findFirstByDeliveryPointCityId(fromCityId)
+                        .orElseThrow(() -> new EntityNotFoundException("Не знайдено відділення в місті id=" + fromCityId));
+
+                Branch destBranch = branchRepository.findFirstByDeliveryPointCityId(toCityId)
+                        .orElseThrow(() -> new EntityNotFoundException("Не знайдено відділення в місті id=" + toCityId));
+
+                Route route = routeRepository
+                        .findByOriginBranchIdAndDestinationBranchId(originBranch.getId(), destBranch.getId())
+                        .orElseGet(() -> {
+                            Route newRoute = new Route();
+                            newRoute.setOriginBranch(originBranch);
+                            newRoute.setDestinationBranch(destBranch);
+                            newRoute.setNeedSorting(false);
+                            return routeRepository.save(newRoute);
+                        });
+
+                WaybillRoute waybillRoute = new WaybillRoute();
+                waybillRoute.setTrip(saved);
+                waybillRoute.setRoute(route);
+                waybillRoute.setSequenceNumber(i + 1);
+                waybillRouteRepository.save(waybillRoute);
+            }
+        }
+
+        return mapper.toDto(saved);
     }
 
     @Override

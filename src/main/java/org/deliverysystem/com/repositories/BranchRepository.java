@@ -9,8 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface BranchRepository extends JpaRepository<Branch, Integer>, JpaSpecificationExecutor<Branch> {
     @Query("SELECT b FROM Branch b WHERE b.deliveryPoint.city.id = :cityId")
     Page<Branch> findAllByCityId(@Param("cityId") Integer cityId, Pageable pageable);
+
+    Optional<Branch> findFirstByDeliveryPointCityId(Integer fromCityId);
 }
