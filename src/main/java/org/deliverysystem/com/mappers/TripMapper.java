@@ -11,9 +11,7 @@ import org.deliverysystem.com.utils.CityCoordinatesLoader;
 import org.mapstruct.*;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface TripMapper extends GenericMapper<Trip, TripDto> {
@@ -119,12 +117,12 @@ public interface TripMapper extends GenericMapper<Trip, TripDto> {
             return List.of();
         }
 
-        if (trip.getWaybillRoutes().size() <= 1) {
-            return List.of();
-        }
+        List<WaybillRoute> sorted = trip.getWaybillRoutes().stream()
+                .sorted(Comparator.comparing(wr -> wr.getSequenceNumber() != null ? wr.getSequenceNumber() : 0))
+                .toList();
 
-        return trip.getWaybillRoutes().stream()
-                .skip(0)
+        return sorted.stream()
+                .limit(sorted.size() - 1)
                 .map(wr -> {
                     try {
                         return wr.getRoute()
@@ -175,20 +173,37 @@ public interface TripMapper extends GenericMapper<Trip, TripDto> {
     }
 
     default List<WaypointCoordinateDto> getWaypointCoordinates(Trip trip) {
-        List<String> waypoints = resolveWaypoints(trip);
-        if (waypoints == null || waypoints.isEmpty()) {
+        if (trip.getWaybillRoutes() == null || trip.getWaybillRoutes().isEmpty()) {
             return List.of();
         }
 
         List<WaypointCoordinateDto> result = new ArrayList<>();
-        for (String cityName : waypoints) {
-            if (cityName == null || cityName.isBlank()) continue;
+        Set<String> seen = new LinkedHashSet<>();
 
-            double[] coords = CityCoordinatesLoader.getCoordinates(cityName);
-            if (coords != null) {
-                result.add(new WaypointCoordinateDto(cityName, coords[0], coords[1]));
-            }
-        }
+        trip.getWaybillRoutes().stream()
+                .sorted(Comparator.comparing(wr -> wr.getSequenceNumber() != null ? wr.getSequenceNumber() : 0))
+                .forEach(wr -> {
+                    try {
+                        String cityName = wr.getRoute()
+                                .getDestinationBranch()
+                                .getDeliveryPoint()
+                                .getCity()
+                                .getName();
+
+                        if (cityName == null || cityName.isBlank() || seen.contains(cityName)) return;
+                        seen.add(cityName);
+
+                        double[] coords = CityCoordinatesLoader.getCoordinates(cityName);
+                        if (coords != null) {
+                            result.add(new WaypointCoordinateDto(
+                                    cityName,
+                                    coords[0],
+                                    coords[1],
+                                    wr.getSequenceNumber()
+                            ));
+                        }
+                    } catch (Exception ignored) {}
+                });
 
         return result;
     }
