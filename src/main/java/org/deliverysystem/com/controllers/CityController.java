@@ -29,6 +29,12 @@ public class CityController {
         return ResponseEntity.ok(cityService.findAll(criteria, pageable));
     }
 
+    @GetMapping("/{cityId}")
+    @Operation(summary = "Отримати місто за id")
+    public ResponseEntity<CityDto> getById(@PathVariable Integer cityId) {
+        return ResponseEntity.ok(cityService.findById(cityId));
+    }
+
     @Operation(summary = "Отримати міста за ID району")
     @GetMapping(params = "districtId")
     public ResponseEntity<Page<CityDto>> getByDistrict(@RequestParam Integer districtId, Pageable pageable) {
