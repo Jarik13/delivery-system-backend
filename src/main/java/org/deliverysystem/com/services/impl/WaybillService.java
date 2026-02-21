@@ -9,15 +9,28 @@ import org.deliverysystem.com.repositories.WaybillRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Integer> {
+    private final WaybillRepository waybillRepository;
+
     public WaybillService(WaybillRepository repository, WaybillMapper mapper) {
         super(mapper, repository);
+        this.waybillRepository = repository;
     }
 
     @Transactional(readOnly = true)
     public WaybillDto findByNumber(Integer number) {
-        return ((WaybillRepository) repository).findByNumber(number).map(mapper::toDto)
+        return waybillRepository.findByNumber(number).map(mapper::toDto)
                 .orElseThrow(() -> new EntityNotFoundException(ErrorMessage.WAYBILL_NOT_FOUND_BY_NUMBER + number));
+    }
+
+    @Transactional(readOnly = true)
+    public List<WaybillDto> findAllForExport(Integer number) {
+        if (number != null) {
+            return waybillRepository.findByNumber(number).map(w -> List.of(mapper.toDto(w))).orElse(List.of());
+        }
+        return waybillRepository.findAll().stream().map(mapper::toDto).toList();
     }
 }
