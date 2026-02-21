@@ -20,26 +20,26 @@ public abstract class WaybillMapper implements GenericMapper<Waybill, WaybillDto
     protected WaybillShipmentMapper waybillShipmentMapper;
 
     @Override
-    @Mapping(source = "createdBy.id",     target = "createdById")
-    @Mapping(source = "createdAt",        target = "createdAt")
-    @Mapping(source = "createdBy",        target = "createdByName",  qualifiedByName = "employeeFullName")
+    @Mapping(source = "createdBy.id", target = "createdById")
+    @Mapping(source = "createdAt", target = "createdAt")
+    @Mapping(source = "createdBy", target = "createdByName", qualifiedByName = "employeeFullName")
     @Mapping(source = "shipmentWaybills", target = "shipmentsCount", qualifiedByName = "mapShipmentsCount")
-    @Mapping(source = "shipmentWaybills", target = "shipments",      qualifiedByName = "mapShipments")
+    @Mapping(source = "shipmentWaybills", target = "shipments", qualifiedByName = "mapShipments")
     public abstract WaybillDto toDto(Waybill entity);
 
     @Override
-    @Mapping(source = "createdById",      target = "createdBy.id")
-    @Mapping(target = "createdAt",        ignore = true)
+    @Mapping(source = "createdById", target = "createdBy.id")
+    @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "shipmentWaybills", ignore = true)
-    @Mapping(target = "waybillRoutes",    ignore = true)
+    @Mapping(target = "waybillRoutes", ignore = true)
     public abstract Waybill toEntity(WaybillDto dto);
 
     @Named("employeeFullName")
     String employeeFullName(Employee employee) {
         if (employee == null) return null;
         StringBuilder sb = new StringBuilder();
-        if (employee.getLastName()   != null) sb.append(employee.getLastName()).append(" ");
-        if (employee.getFirstName()  != null) sb.append(employee.getFirstName()).append(" ");
+        if (employee.getLastName() != null) sb.append(employee.getLastName()).append(" ");
+        if (employee.getFirstName() != null) sb.append(employee.getFirstName()).append(" ");
         if (employee.getMiddleName() != null) sb.append(employee.getMiddleName());
         return sb.toString().trim();
     }
@@ -54,7 +54,8 @@ public abstract class WaybillMapper implements GenericMapper<Waybill, WaybillDto
         if (shipmentWaybills == null) return Collections.emptyList();
         return shipmentWaybills.stream()
                 .filter(sw -> sw.getShipment() != null)
-                .map(sw -> waybillShipmentMapper.toDto(sw.getShipment()))
+                .map(sw -> waybillShipmentMapper.toDto(sw))
+                .sorted(java.util.Comparator.comparing(dto -> dto.sequenceNumber() != null ? dto.sequenceNumber() : Integer.MAX_VALUE))
                 .toList();
     }
 }

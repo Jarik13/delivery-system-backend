@@ -13,6 +13,9 @@ public record WaybillShipmentDto(
         @Schema(description = "Трек-номер", example = "59000000000379")
         String trackingNumber,
 
+        @Schema(description = "Порядковий номер у накладній")
+        Integer sequenceNumber,
+
         @Schema(description = "ПІБ відправника", example = "Сосюра Зеновій Орестович")
         String senderFullName,
 
