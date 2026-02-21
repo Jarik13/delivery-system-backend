@@ -1,7 +1,8 @@
-package org.deliverysystem.com.export;
+package org.deliverysystem.com.export.impl;
 
 import org.deliverysystem.com.dtos.waybills.WaybillDto;
 import org.deliverysystem.com.dtos.waybills.WaybillShipmentDto;
+import org.deliverysystem.com.export.WaybillExportStrategy;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,10 +13,6 @@ import java.util.List;
 
 @Component
 public class CsvWaybillExportStrategy implements WaybillExportStrategy {
-
-    @Override
-    public String getFormat() { return "csv"; }
-
     @Override
     public ResponseEntity<byte[]> export(List<WaybillDto> waybills) {
         StringWriter sw = new StringWriter();
@@ -57,6 +54,9 @@ public class CsvWaybillExportStrategy implements WaybillExportStrategy {
                 .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
                 .body(bytes);
     }
+
+    @Override
+    public String getFormat() { return "csv"; }
 
     private String csv(Object value) {
         if (value == null) return "";
