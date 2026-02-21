@@ -33,4 +33,9 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
         }
         return waybillRepository.findAll().stream().map(mapper::toDto).toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<WaybillDto> findAllByIds(List<Integer> ids) {
+        return waybillRepository.findAllById(ids).stream().map(mapper::toDto).toList();
+    }
 }

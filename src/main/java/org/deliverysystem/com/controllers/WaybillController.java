@@ -30,12 +30,15 @@ public class WaybillController extends AbstractBaseController<WaybillDto, Intege
         return ResponseEntity.ok(waybillService.findByNumber(number));
     }
 
-    @Operation(summary = "Експорт накладних", description = "Підтримувані формати: csv, xlsx, pdf, json")
     @GetMapping("/export")
     public ResponseEntity<byte[]> export(
-            @Parameter(description = "Формат: csv | xlsx | pdf | json") @RequestParam String format,
-            @Parameter(description = "Фільтр за номером накладної") @RequestParam(required = false) Integer number) {
-        List<WaybillDto> waybills = waybillService.findAllForExport(number);
+            @RequestParam String format,
+            @RequestParam(required = false) Integer number,
+            @RequestParam(required = false) List<Integer> ids) {
+
+        List<WaybillDto> waybills = (ids != null && !ids.isEmpty())
+                ? waybillService.findAllByIds(ids)
+                : waybillService.findAllForExport(number);
         return exportContext.export(format, waybills);
     }
 
