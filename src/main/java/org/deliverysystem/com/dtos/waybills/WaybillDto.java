@@ -1,8 +1,11 @@
-package org.deliverysystem.com.dtos;
+package org.deliverysystem.com.dtos.waybills;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "Транспортна накладна (Маніфест)")
 public record WaybillDto(
@@ -21,5 +24,17 @@ public record WaybillDto(
 
         @NotNull
         @Schema(description = "ID співробітника, що створив", example = "2")
-        Integer createdById
+        Integer createdById,
+
+        @Schema(description = "Ім'я співробітника, що створив", accessMode = Schema.AccessMode.READ_ONLY)
+        String createdByName,
+
+        @Schema(description = "Дата створення", accessMode = Schema.AccessMode.READ_ONLY)
+        LocalDateTime createdAt,
+
+        @Schema(description = "Кількість відправлень", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer shipmentsCount,
+
+        @Schema(description = "Список відправлень", accessMode = Schema.AccessMode.READ_ONLY)
+        List<WaybillShipmentDto> shipments
 ) {}

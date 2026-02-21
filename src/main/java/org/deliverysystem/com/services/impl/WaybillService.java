@@ -2,7 +2,7 @@ package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.constants.ErrorMessage;
-import org.deliverysystem.com.dtos.WaybillDto;
+import org.deliverysystem.com.dtos.waybills.WaybillDto;
 import org.deliverysystem.com.entities.Waybill;
 import org.deliverysystem.com.mappers.WaybillMapper;
 import org.deliverysystem.com.repositories.WaybillRepository;
