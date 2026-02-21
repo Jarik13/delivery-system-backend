@@ -7,12 +7,15 @@ import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.trips.CreateTripDto;
 import org.deliverysystem.com.dtos.trips.TripDto;
 import org.deliverysystem.com.dtos.search.TripSearchCriteria;
+import org.deliverysystem.com.dtos.trips.TripSegmentDto;
 import org.deliverysystem.com.services.impl.TripService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/trips")
@@ -28,6 +31,12 @@ public class TripController {
             @ParameterObject Pageable pageable
     ) {
         return ResponseEntity.ok(tripService.findAll(criteria, pageable));
+    }
+
+    @GetMapping("/{id}/segments")
+    @Operation(summary = "Отримати сегменти маршруту рейсу")
+    public ResponseEntity<List<TripSegmentDto>> getSegments(@PathVariable Integer id) {
+        return ResponseEntity.ok(tripService.getSegments(id));
     }
 
     @GetMapping("/{id}")

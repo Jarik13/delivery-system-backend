@@ -5,6 +5,7 @@ import jakarta.persistence.criteria.JoinType;
 import org.deliverysystem.com.dtos.trips.CreateTripDto;
 import org.deliverysystem.com.dtos.trips.TripDto;
 import org.deliverysystem.com.dtos.search.TripSearchCriteria;
+import org.deliverysystem.com.dtos.trips.TripSegmentDto;
 import org.deliverysystem.com.dtos.trips.WaypointInputDto;
 import org.deliverysystem.com.entities.Branch;
 import org.deliverysystem.com.entities.Route;
@@ -140,6 +141,49 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
 
         Page<TripDto> result = tripRepository.findAll(spec, pageable).map(mapper::toDto);
         return new RestPage<>(result);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TripSegmentDto> getSegments(Integer tripId) {
+        Trip trip = repository.findById(tripId).orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено: " + tripId));
+
+        if (trip.getWaybillRoutes() == null) return List.of();
+
+        return trip.getWaybillRoutes().stream()
+                .sorted(Comparator.comparing(wr -> wr.getSequenceNumber() != null ? wr.getSequenceNumber() : 0))
+                .map(wr -> {
+                    Route route = wr.getRoute();
+                    String originCity = null;
+                    String destCity = null;
+                    Double distance = null;
+
+                    try {
+                        originCity = route.getOriginBranch().getDeliveryPoint().getCity().getName();
+                    } catch (Exception ignored) {
+                    }
+
+                    try {
+                        destCity = route.getDestinationBranch().getDeliveryPoint().getCity().getName();
+                    } catch (Exception ignored) {
+                    }
+
+                    try {
+                        distance = Double.valueOf(route.getDistanceKm() != null ? route.getDistanceKm() : null);
+                    } catch (Exception ignored) {
+                    }
+
+                    boolean hasWaybill = waybillRouteRepository.existsByTripIdAndRouteId(tripId, route.getId());
+
+                    return new TripSegmentDto(
+                            route.getId(),
+                            wr.getSequenceNumber(),
+                            originCity,
+                            destCity,
+                            distance,
+                            hasWaybill
+                    );
+                })
+                .toList();
     }
 
     private Specification<Trip> originCitySpec(String cityName) {
