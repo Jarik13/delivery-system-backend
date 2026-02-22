@@ -57,7 +57,7 @@ public class BranchService extends AbstractBaseService<Branch, BranchDto, Intege
         Specification<Branch> spec = Specification.where(SpecificationUtils.<Branch>iLike("deliveryPoint.name", criteria.name()))
                 .and(SpecificationUtils.iLike("deliveryPoint.address", criteria.address()))
                 .and(SpecificationUtils.equal("deliveryPoint.city.id", criteria.cityId()))
-                .and(SpecificationUtils.equal("branchType.id", criteria.branchTypeId()));
+                .and(SpecificationUtils.in("branchType.id", criteria.branchTypes()));
 
         return branchRepository.findAll(spec, pageable).map(mapper::toDto);
     }

@@ -71,7 +71,7 @@ public class ParcelService extends AbstractBaseService<Parcel, ParcelDto, Intege
         }
 
         Specification<Parcel> spec = Specification.where(SpecificationUtils.<Parcel>iLike("contentDescription", criteria.name()))
-                .and(SpecificationUtils.equal("parcelType.id", criteria.parcelTypeId()))
+                .and(SpecificationUtils.in("parcelType.id", criteria.parcelTypes()))
                 .and(SpecificationUtils.gte("actualWeight", criteria.weightMin()))
                 .and(SpecificationUtils.lte("actualWeight", criteria.weightMax()))
                 .and(SpecificationUtils.gte("declaredValue", criteria.declaredValueMin()))

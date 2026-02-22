@@ -33,20 +33,17 @@ public record TripSearchCriteria(
         @Schema(description = "Плановий час виїзду (до)")
         LocalDateTime scheduledDepartureTo,
 
-
         @Schema(description = "Фактичний час виїзду (від)")
         LocalDateTime actualDepartureFrom,
 
         @Schema(description = "Фактичний час виїзду (до)")
         LocalDateTime actualDepartureTo,
 
-
         @Schema(description = "Плановий час прибуття (від)")
         LocalDateTime scheduledArrivalFrom,
 
         @Schema(description = "Плановий час прибуття (до)")
         LocalDateTime scheduledArrivalTo,
-
 
         @Schema(description = "Фактичний час прибуття (від)")
         LocalDateTime actualArrivalFrom,

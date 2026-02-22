@@ -54,6 +54,8 @@ public class RouteService extends AbstractBaseService<Route, RouteDto, Integer> 
                 .and(SpecificationUtils.equal("destinationBranch.id", criteria.destinationBranchId()))
                 .and(SpecificationUtils.iLike("originBranch.deliveryPoint.name", criteria.originBranchName()))
                 .and(SpecificationUtils.iLike("destinationBranch.deliveryPoint.name", criteria.destinationBranchName()))
+                .and(SpecificationUtils.gte("distanceKmMin", criteria.distanceKmMin()))
+                .and(SpecificationUtils.lte("distanceKmMax", criteria.distanceKmMax()))
                 .and(SpecificationUtils.equal("needSorting", criteria.needSorting()));
 
         return routeRepository.findAll(spec, pageable).map(mapper::toDto);

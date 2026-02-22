@@ -15,6 +15,12 @@ public record RouteSearchCriteria(
         @Schema(description = "Назва відділення призначення (пошук)", example = "Київ")
         String destinationBranchName,
 
+        @Schema(description = "Мінімальна відстань між відділенями")
+        Float distanceKmMin,
+
+        @Schema(description = "Максимальна відстань між відділенями")
+        Float distanceKmMax,
+
         @Schema(description = "Чи потрібне сортування")
         Boolean needSorting
 ) {}
