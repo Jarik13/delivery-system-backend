@@ -3,6 +3,7 @@ package org.deliverysystem.com.services.impl;
 import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.RouteDto;
+import org.deliverysystem.com.dtos.routes.RouteStatisticsDto;
 import org.deliverysystem.com.dtos.search.RouteSearchCriteria;
 import org.deliverysystem.com.entities.Route;
 import org.deliverysystem.com.mappers.RouteMapper;
@@ -54,11 +55,18 @@ public class RouteService extends AbstractBaseService<Route, RouteDto, Integer> 
                 .and(SpecificationUtils.equal("destinationBranch.id", criteria.destinationBranchId()))
                 .and(SpecificationUtils.iLike("originBranch.deliveryPoint.name", criteria.originBranchName()))
                 .and(SpecificationUtils.iLike("destinationBranch.deliveryPoint.name", criteria.destinationBranchName()))
-                .and(SpecificationUtils.gte("distanceKmMin", criteria.distanceKmMin()))
-                .and(SpecificationUtils.lte("distanceKmMax", criteria.distanceKmMax()))
+                .and(SpecificationUtils.gte("distanceKm", criteria.distanceKmMin()))
+                .and(SpecificationUtils.lte("distanceKm", criteria.distanceKmMax()))
                 .and(SpecificationUtils.equal("needSorting", criteria.needSorting()));
 
         return routeRepository.findAll(spec, pageable).map(mapper::toDto);
+    }
+
+    public RouteStatisticsDto getStatistics() {
+        Float distanceKmMin = routeRepository.findMinDistanceKm();
+        Float distanceKmMax = routeRepository.findMaxDistanceKm();
+
+        return new RouteStatisticsDto(distanceKmMin, distanceKmMax);
     }
 
     @Transactional(readOnly = true)

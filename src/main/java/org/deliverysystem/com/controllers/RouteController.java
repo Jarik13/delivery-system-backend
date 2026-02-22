@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.RouteDto;
+import org.deliverysystem.com.dtos.routes.RouteStatisticsDto;
 import org.deliverysystem.com.dtos.search.RouteSearchCriteria;
 import org.deliverysystem.com.services.impl.RouteService;
 import org.springdoc.core.annotations.ParameterObject;
@@ -29,6 +30,12 @@ public class RouteController {
             @ParameterObject Pageable pageable
     ) {
         return ResponseEntity.ok(routeService.findAll(criteria, pageable));
+    }
+
+    @Operation(summary = "Отримати статистику по маршрутах (мін/макс значення)")
+    @GetMapping("/statistics")
+    public ResponseEntity<RouteStatisticsDto> getStatistics() {
+        return ResponseEntity.ok(routeService.getStatistics());
     }
 
     @Operation(summary = "Знайти маршрути, що виїжджають з відділення")
