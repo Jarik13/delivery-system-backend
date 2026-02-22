@@ -238,8 +238,8 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         }
 
         Specification<Shipment> spec = Specification.where(SpecificationUtils.<Shipment>iLike("trackingNumber", criteria.trackingNumber()))
-                .and(SpecificationUtils.equal("shipmentStatus.id", criteria.shipmentStatusId()))
-                .and(SpecificationUtils.equal("shipmentType.id", criteria.shipmentTypeId()))
+                .and(SpecificationUtils.in("shipmentStatus.id", criteria.shipmentStatuses()))
+                .and(SpecificationUtils.in("shipmentType.id", criteria.shipmentTypes()))
                 .and(SpecificationUtils.iLike("parcel.contentDescription", criteria.parcelDescription()))
                 .and(SpecificationUtils.gte("createdAt", criteria.createdAtFrom()))
                 .and(SpecificationUtils.lte("createdAt", criteria.createdAtTo()))

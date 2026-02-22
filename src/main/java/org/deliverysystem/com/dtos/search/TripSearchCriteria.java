@@ -2,6 +2,7 @@ package org.deliverysystem.com.dtos.search;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "Критерії для пошуку та фільтрації магістральних рейсів")
 public record TripSearchCriteria(
@@ -9,7 +10,7 @@ public record TripSearchCriteria(
         Integer tripNumber,
 
         @Schema(description = "ID статусу рейсу", example = "1")
-        Integer tripStatusId,
+        List<Integer> tripStatuses,
 
         @Schema(description = "ID водія", example = "5")
         Integer driverId,
