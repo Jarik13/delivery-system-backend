@@ -172,7 +172,7 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                     } catch (Exception ignored) {
                     }
 
-                    boolean hasWaybill = waybillRouteRepository.existsByTripIdAndRouteId(tripId, route.getId());
+                    boolean hasWaybill = waybillRouteRepository.existsByTripIdAndRouteIdAndWaybillIsNotNull(tripId, route.getId());
 
                     return new TripSegmentDto(
                             route.getId(),

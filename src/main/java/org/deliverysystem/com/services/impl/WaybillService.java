@@ -96,7 +96,7 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
         Route route = routeRepository.findById(dto.routeId())
                 .orElseThrow(() -> new EntityNotFoundException("Маршрут не знайдено: " + dto.routeId()));
 
-        boolean segmentExists = waybillRouteRepository.existsByTripIdAndRouteId(dto.tripId(), dto.routeId());
+        boolean segmentExists = waybillRouteRepository.existsByTripIdAndRouteIdAndWaybillIsNotNull(dto.tripId(), dto.routeId());
         if (segmentExists) {
             throw new IllegalStateException("Накладна для цього сегменту рейсу вже існує");
         }
