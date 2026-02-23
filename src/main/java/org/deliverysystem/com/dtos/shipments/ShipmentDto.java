@@ -54,6 +54,18 @@ public record ShipmentDto(
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String destinationCityName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) BigDecimal actualWeight,
 
+        @Schema(description = "Назва варіанту коробки (тип + розміри)", accessMode = Schema.AccessMode.READ_ONLY)
+        String boxVariantName,
+
+        @Schema(description = "Розміри коробки у форматі 'ДxШxВ см'", accessMode = Schema.AccessMode.READ_ONLY)
+        String boxVariantDimensions,
+
+        @Schema(description = "Чи є спеціальне пакування", accessMode = Schema.AccessMode.READ_ONLY)
+        Boolean hasSpecialPackaging,
+
+        @Schema(description = "Тип доставки (Стандартна / Експрес / тощо)", accessMode = Schema.AccessMode.READ_ONLY)
+        String deliveryTypeName,
+
         @Schema(description = "Список усіх платежів по цьому відправленню")
         List<PaymentDto> payments,
 

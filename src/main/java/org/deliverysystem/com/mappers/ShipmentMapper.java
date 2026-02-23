@@ -37,11 +37,15 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(target = "originCityName", source = "entity", qualifiedByName = "resolveOriginCity")
     @Mapping(target = "destinationLocationName", source = "entity", qualifiedByName = "resolveDestinationName")
     @Mapping(target = "destinationCityName", source = "entity", qualifiedByName = "resolveDestinationCity")
-    @Mapping(source = "payments", target = "payments")
-    @Mapping(source = "returns", target = "returns")
     @Mapping(target = "totalPaidAmount", source = "entity", qualifiedByName = "calculateTotalPaid")
     @Mapping(target = "remainingAmount", source = "entity", qualifiedByName = "calculateRemaining")
     @Mapping(target = "isFullyPaid", source = "entity", qualifiedByName = "calculateIsFullyPaid")
+    @Mapping(target = "boxVariantName", source = "entity", qualifiedByName = "resolveBoxVariantName")
+    @Mapping(target = "boxVariantDimensions", source = "entity", qualifiedByName = "resolveBoxVariantDimensions")
+    @Mapping(target = "hasSpecialPackaging", source = "entity", qualifiedByName = "resolveHasSpecialPackaging")
+    @Mapping(target = "deliveryTypeName", source = "entity", qualifiedByName = "resolveDeliveryTypeName")
+    @Mapping(source = "payments", target = "payments")
+    @Mapping(source = "returns", target = "returns")
     ShipmentDto toDto(Shipment entity);
 
     @Override
@@ -70,11 +74,55 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(target = "returns", ignore = true)
     Shipment toEntity(ShipmentDto dto);
 
+    @Named("resolveBoxVariantName")
+    default String resolveBoxVariantName(Shipment shipment) {
+        try {
+            BoxVariant bv = shipment.getShipmentBox().getBoxVariant();
+            if (bv == null) return null;
+            String typeName = bv.getBoxType() != null ? bv.getBoxType().getName() : null;
+            return typeName != null ? typeName : "Коробка";
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Named("resolveBoxVariantDimensions")
+    default String resolveBoxVariantDimensions(Shipment shipment) {
+        try {
+            BoxVariant bv = shipment.getShipmentBox().getBoxVariant();
+            if (bv == null) return null;
+            return String.format("%sx%sx%s см",
+                    bv.getLength() != null ? bv.getLength().stripTrailingZeros().toPlainString() : "?",
+                    bv.getWidth() != null ? bv.getWidth().stripTrailingZeros().toPlainString() : "?",
+                    bv.getHeight() != null ? bv.getHeight().stripTrailingZeros().toPlainString() : "?"
+            );
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Named("resolveHasSpecialPackaging")
+    default Boolean resolveHasSpecialPackaging(Shipment shipment) {
+        try {
+            BigDecimal sp = shipment.getPrice() != null ? shipment.getPrice().getSpecialPackaging() : null;
+            return sp != null && sp.compareTo(BigDecimal.ZERO) > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Named("resolveDeliveryTypeName")
+    default String resolveDeliveryTypeName(Shipment shipment) {
+        try {
+            return shipment.getShipmentType() != null ? shipment.getShipmentType().getName() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     @Named("calculateTotalPaid")
     default BigDecimal calculateTotalPaid(Shipment entity) {
-        if (entity.getPayments() == null || entity.getPayments().isEmpty()) {
-            return BigDecimal.ZERO;
-        }
+        if (entity.getPayments() == null || entity.getPayments().isEmpty()) return BigDecimal.ZERO;
         return entity.getPayments().stream()
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -93,15 +141,14 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
         BigDecimal totalPaid = calculateTotalPaid(entity);
         BigDecimal totalPrice = (entity.getPrice() != null && entity.getPrice().getTotal() != null)
                 ? entity.getPrice().getTotal() : BigDecimal.ZERO;
-
         if (totalPrice.compareTo(BigDecimal.ZERO) == 0) return true;
-
         return totalPaid.compareTo(totalPrice) >= 0;
     }
 
     @Named("resolveOriginName")
     default String resolveOriginName(Shipment shipment) {
-        if (shipment.getOriginDeliveryPoint() != null && shipment.getOriginDeliveryPoint().getDeliveryPoint() != null) {
+        if (shipment.getOriginDeliveryPoint() != null &&
+            shipment.getOriginDeliveryPoint().getDeliveryPoint() != null) {
             return shipment.getOriginDeliveryPoint().getDeliveryPoint().getName();
         }
         if (shipment.getOriginAddress() != null) {
@@ -112,7 +159,8 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
 
     @Named("resolveDestinationName")
     default String resolveDestinationName(Shipment shipment) {
-        if (shipment.getDestinationDeliveryPoint() != null && shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null) {
+        if (shipment.getDestinationDeliveryPoint() != null &&
+            shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null) {
             return shipment.getDestinationDeliveryPoint().getDeliveryPoint().getName();
         }
         if (shipment.getDestinationAddress() != null) {
@@ -128,15 +176,12 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
             shipment.getOriginDeliveryPoint().getDeliveryPoint().getCity() != null) {
             return shipment.getOriginDeliveryPoint().getDeliveryPoint().getCity().getName();
         }
-
-        if (shipment.getOriginAddress() != null &&
-            shipment.getOriginAddress().getAddress() != null &&
-            shipment.getOriginAddress().getAddress().getHouse() != null &&
-            shipment.getOriginAddress().getAddress().getHouse().getStreet() != null &&
-            shipment.getOriginAddress().getAddress().getHouse().getStreet().getCity() != null) {
-            return shipment.getOriginAddress().getAddress().getHouse().getStreet().getCity().getName();
+        try {
+            return shipment.getOriginAddress().getAddress()
+                    .getHouse().getStreet().getCity().getName();
+        } catch (Exception e) {
+            return "";
         }
-        return "";
     }
 
     @Named("resolveDestinationCity")
@@ -146,15 +191,12 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
             shipment.getDestinationDeliveryPoint().getDeliveryPoint().getCity() != null) {
             return shipment.getDestinationDeliveryPoint().getDeliveryPoint().getCity().getName();
         }
-
-        if (shipment.getDestinationAddress() != null &&
-            shipment.getDestinationAddress().getAddress() != null &&
-            shipment.getDestinationAddress().getAddress().getHouse() != null &&
-            shipment.getDestinationAddress().getAddress().getHouse().getStreet() != null &&
-            shipment.getDestinationAddress().getAddress().getHouse().getStreet().getCity() != null) {
-            return shipment.getDestinationAddress().getAddress().getHouse().getStreet().getCity().getName();
+        try {
+            return shipment.getDestinationAddress().getAddress()
+                    .getHouse().getStreet().getCity().getName();
+        } catch (Exception e) {
+            return "";
         }
-        return "";
     }
 
     default String formatAddress(Address addr) {
@@ -163,25 +205,20 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
         }
         String street = addr.getHouse().getStreet().getName();
         String houseNum = addr.getHouse().getNumber();
-        Integer apartment = addr.getApartmentNumber();
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(street).append(", буд. ").append(houseNum);
-
-        if (apartment != null && apartment > 0) {
-            sb.append(", кв. ").append(apartment);
-        }
-
+        Integer apt = addr.getApartmentNumber();
+        StringBuilder sb = new StringBuilder()
+                .append(street).append(", буд. ").append(houseNum);
+        if (apt != null && apt > 0) sb.append(", кв. ").append(apt);
         return sb.toString();
     }
 
     @Named("toFullName")
     default String toFullName(BaseUser user) {
         if (user == null) return "Невідомо";
-        StringBuilder fullName = new StringBuilder();
-        if (user.getLastName() != null) fullName.append(user.getLastName()).append(" ");
-        if (user.getFirstName() != null) fullName.append(user.getFirstName()).append(" ");
-        if (user.getMiddleName() != null) fullName.append(user.getMiddleName());
-        return fullName.toString().trim();
+        StringBuilder sb = new StringBuilder();
+        if (user.getLastName() != null) sb.append(user.getLastName()).append(" ");
+        if (user.getFirstName() != null) sb.append(user.getFirstName()).append(" ");
+        if (user.getMiddleName() != null) sb.append(user.getMiddleName());
+        return sb.toString().trim();
     }
 }
