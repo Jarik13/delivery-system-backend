@@ -2,7 +2,7 @@ package org.deliverysystem.com.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.deliverysystem.com.dtos.RouteListDto;
+import org.deliverysystem.com.dtos.route_lists.RouteListDto;
 import org.deliverysystem.com.services.impl.RouteListService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,8 +21,8 @@ public class RouteListController extends AbstractBaseController<RouteListDto, In
     }
 
     @Operation(summary = "Отримати всі листи конкретного кур'єра")
-    @GetMapping("/by-courier/{courierId}")
-    public ResponseEntity<Page<RouteListDto>> getByCourier(@PathVariable Integer courierId, Pageable pageable) {
+    @GetMapping(params = "courierId")
+    public ResponseEntity<Page<RouteListDto>> getByCourier(@RequestParam Integer courierId, Pageable pageable) {
         return ResponseEntity.ok(routeListService.findAllByCourierId(courierId, pageable));
     }
 }

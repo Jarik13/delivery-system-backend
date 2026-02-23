@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import org.deliverysystem.com.annotations.GenerateCustomIntegerNumber;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "route_lists")
@@ -27,6 +29,9 @@ public class RouteList {
 
     @Column(name = "route_list_total_weight")
     private BigDecimal totalWeight;
+
+    @OneToMany(mappedBy = "routeList", cascade = CascadeType.ALL)
+    private List<RouteSheetItem> routeSheetItems = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "courier_id")

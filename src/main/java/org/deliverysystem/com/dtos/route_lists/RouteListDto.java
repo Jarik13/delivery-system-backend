@@ -1,8 +1,9 @@
-package org.deliverysystem.com.dtos;
+package org.deliverysystem.com.dtos.route_lists;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Schema(description = "Маршрутний лист кур'єра (завдання на день)")
 public record RouteListDto(
@@ -17,10 +18,19 @@ public record RouteListDto(
         BigDecimal totalWeight,
 
         @NotNull
-        @Schema(description = "ID кур'єра", example = "10")
+        @Schema(description = "ID кур'єра")
         Integer courierId,
 
+        @Schema(description = "ПІБ кур'єра", example = "Петренко Іван Іванович")
+        String courierFullName,
+
         @NotNull
-        @Schema(description = "ID статусу виконання", example = "1")
-        Integer statusId
+        @Schema(description = "ID статусу виконання")
+        Integer statusId,
+
+        @Schema(description = "Назва статусу", example = "У процесі доставки")
+        String statusName,
+
+        @Schema(description = "Список відправлень у маршруті")
+        List<RouteSheetItemDto> items
 ) {}

@@ -1,6 +1,6 @@
 package org.deliverysystem.com.services.impl;
 
-import org.deliverysystem.com.dtos.RouteListDto;
+import org.deliverysystem.com.dtos.route_lists.RouteListDto;
 import org.deliverysystem.com.entities.RouteList;
 import org.deliverysystem.com.mappers.RouteListMapper;
 import org.deliverysystem.com.repositories.RouteListRepository;
