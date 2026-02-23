@@ -3,6 +3,7 @@ package org.deliverysystem.com.dtos.route_lists;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Schema(description = "Маршрутний лист кур'єра (завдання на день)")
@@ -30,6 +31,9 @@ public record RouteListDto(
 
         @Schema(description = "Назва статусу", example = "У процесі доставки")
         String statusName,
+
+        @Schema(description = "Дата та час створення")
+        LocalDateTime createdAt,
 
         @Schema(description = "Список відправлень у маршруті")
         List<RouteSheetItemDto> items
