@@ -66,6 +66,18 @@ public record ShipmentDto(
         @Schema(description = "Тип доставки (Стандартна / Експрес / тощо)", accessMode = Schema.AccessMode.READ_ONLY)
         String deliveryTypeName,
 
+        @Schema(description = "ID накладної до якої прив'язане відправлення (перша в ланцюжку)", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer waybillId,
+
+        @Schema(description = "Номер накладної у форматі '№100001'", accessMode = Schema.AccessMode.READ_ONLY)
+        String waybillNumber,
+
+        @Schema(description = "ID маршрутного листа до якого прив'язане відправлення (якщо є)", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer routeListId,
+
+        @Schema(description = "Номер маршрутного листа у форматі '№200001'", accessMode = Schema.AccessMode.READ_ONLY)
+        String routeListNumber,
+
         @Schema(description = "Список усіх платежів по цьому відправленню")
         List<PaymentDto> payments,
 

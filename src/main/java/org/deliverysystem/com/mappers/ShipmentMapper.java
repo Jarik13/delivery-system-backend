@@ -44,6 +44,10 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(target = "boxVariantDimensions", source = "entity", qualifiedByName = "resolveBoxVariantDimensions")
     @Mapping(target = "hasSpecialPackaging", source = "entity", qualifiedByName = "resolveHasSpecialPackaging")
     @Mapping(target = "deliveryTypeName", source = "entity", qualifiedByName = "resolveDeliveryTypeName")
+    @Mapping(target = "waybillId", source = "entity", qualifiedByName = "resolveWaybillId")
+    @Mapping(target = "waybillNumber", source = "entity", qualifiedByName = "resolveWaybillNumber")
+    @Mapping(target = "routeListId", source = "entity", qualifiedByName = "resolveRouteListId")
+    @Mapping(target = "routeListNumber", source = "entity", qualifiedByName = "resolveRouteListNumber")
     @Mapping(source = "payments", target = "payments")
     @Mapping(source = "returns", target = "returns")
     ShipmentDto toDto(Shipment entity);
@@ -74,6 +78,54 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(target = "returns", ignore = true)
     Shipment toEntity(ShipmentDto dto);
 
+    @Named("resolveWaybillId")
+    default Integer resolveWaybillId(Shipment shipment) {
+        try {
+            return shipment.getShipmentWaybills().stream()
+                    .min(java.util.Comparator.comparingInt(ShipmentWaybill::getSequenceNumber))
+                    .map(sw -> sw.getWaybill().getId())
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Named("resolveWaybillNumber")
+    default String resolveWaybillNumber(Shipment shipment) {
+        try {
+            return shipment.getShipmentWaybills().stream()
+                    .min(java.util.Comparator.comparingInt(ShipmentWaybill::getSequenceNumber))
+                    .map(sw -> String.valueOf(sw.getWaybill().getNumber()))
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Named("resolveRouteListId")
+    default Integer resolveRouteListId(Shipment shipment) {
+        try {
+            return shipment.getRouteSheetItems().stream()
+                    .findFirst()
+                    .map(rsi -> rsi.getRouteList().getId())
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Named("resolveRouteListNumber")
+    default String resolveRouteListNumber(Shipment shipment) {
+        try {
+            return shipment.getRouteSheetItems().stream()
+                    .findFirst()
+                    .map(rsi -> String.valueOf(rsi.getRouteList().getNumber()))
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     @Named("resolveBoxVariantName")
     default String resolveBoxVariantName(Shipment shipment) {
         try {
@@ -93,7 +145,7 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
             if (bv == null) return null;
             return String.format("%sx%sx%s см",
                     bv.getLength() != null ? bv.getLength().stripTrailingZeros().toPlainString() : "?",
-                    bv.getWidth() != null ? bv.getWidth().stripTrailingZeros().toPlainString() : "?",
+                    bv.getWidth()  != null ? bv.getWidth().stripTrailingZeros().toPlainString()  : "?",
                     bv.getHeight() != null ? bv.getHeight().stripTrailingZeros().toPlainString() : "?"
             );
         } catch (Exception e) {
@@ -130,7 +182,7 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
 
     @Named("calculateRemaining")
     default BigDecimal calculateRemaining(Shipment entity) {
-        BigDecimal totalPaid = calculateTotalPaid(entity);
+        BigDecimal totalPaid  = calculateTotalPaid(entity);
         BigDecimal totalPrice = (entity.getPrice() != null && entity.getPrice().getTotal() != null)
                 ? entity.getPrice().getTotal() : BigDecimal.ZERO;
         return totalPrice.subtract(totalPaid);
@@ -138,7 +190,7 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
 
     @Named("calculateIsFullyPaid")
     default Boolean calculateIsFullyPaid(Shipment entity) {
-        BigDecimal totalPaid = calculateTotalPaid(entity);
+        BigDecimal totalPaid  = calculateTotalPaid(entity);
         BigDecimal totalPrice = (entity.getPrice() != null && entity.getPrice().getTotal() != null)
                 ? entity.getPrice().getTotal() : BigDecimal.ZERO;
         if (totalPrice.compareTo(BigDecimal.ZERO) == 0) return true;
@@ -203,9 +255,9 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
         if (addr == null || addr.getHouse() == null || addr.getHouse().getStreet() == null) {
             return "Адреса неповна";
         }
-        String street = addr.getHouse().getStreet().getName();
-        String houseNum = addr.getHouse().getNumber();
-        Integer apt = addr.getApartmentNumber();
+        String  street   = addr.getHouse().getStreet().getName();
+        String  houseNum = addr.getHouse().getNumber();
+        Integer apt      = addr.getApartmentNumber();
         StringBuilder sb = new StringBuilder()
                 .append(street).append(", буд. ").append(houseNum);
         if (apt != null && apt > 0) sb.append(", кв. ").append(apt);
@@ -216,8 +268,8 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     default String toFullName(BaseUser user) {
         if (user == null) return "Невідомо";
         StringBuilder sb = new StringBuilder();
-        if (user.getLastName() != null) sb.append(user.getLastName()).append(" ");
-        if (user.getFirstName() != null) sb.append(user.getFirstName()).append(" ");
+        if (user.getLastName()   != null) sb.append(user.getLastName()).append(" ");
+        if (user.getFirstName()  != null) sb.append(user.getFirstName()).append(" ");
         if (user.getMiddleName() != null) sb.append(user.getMiddleName());
         return sb.toString().trim();
     }
