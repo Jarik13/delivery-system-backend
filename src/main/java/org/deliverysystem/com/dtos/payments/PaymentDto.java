@@ -31,5 +31,8 @@ public record PaymentDto(
 
         @NotNull
         @Schema(description = "ID відправлення", example = "100")
-        Integer shipmentId
+        Integer shipmentId,
+
+        @Schema(description = "Трек-номер відправлення", accessMode = Schema.AccessMode.READ_ONLY)
+        String shipmentTrackingNumber
 ) {}
