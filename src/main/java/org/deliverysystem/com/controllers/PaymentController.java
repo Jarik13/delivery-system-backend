@@ -5,7 +5,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.payments.PaymentDto;
+import org.deliverysystem.com.dtos.payments.PaymentStatisticDto;
 import org.deliverysystem.com.dtos.search.PaymentSearchCriteria;
+import org.deliverysystem.com.dtos.shipments.ShipmentStatisticsDto;
 import org.deliverysystem.com.services.impl.PaymentService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
@@ -28,6 +30,12 @@ public class PaymentController {
             @ParameterObject Pageable pageable
     ) {
         return ResponseEntity.ok(paymentService.findAll(criteria, pageable));
+    }
+
+    @Operation(summary = "Отримати статистику по відправленням (мін/макс значення)")
+    @GetMapping("/statistics")
+    public ResponseEntity<PaymentStatisticDto> getStatistics() {
+        return ResponseEntity.ok(paymentService.getStatistics());
     }
 
     @Operation(summary = "Отримати платіж за ID")

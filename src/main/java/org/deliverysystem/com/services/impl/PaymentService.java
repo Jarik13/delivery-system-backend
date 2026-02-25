@@ -1,17 +1,21 @@
 package org.deliverysystem.com.services.impl;
 
 import org.deliverysystem.com.dtos.payments.PaymentDto;
+import org.deliverysystem.com.dtos.payments.PaymentStatisticDto;
 import org.deliverysystem.com.dtos.search.PaymentSearchCriteria;
 import org.deliverysystem.com.entities.Payment;
 import org.deliverysystem.com.mappers.PaymentMapper;
 import org.deliverysystem.com.repositories.PaymentRepository;
 import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 @Service
 public class PaymentService extends AbstractBaseService<Payment, PaymentDto, Integer> {
@@ -41,5 +45,14 @@ public class PaymentService extends AbstractBaseService<Payment, PaymentDto, Int
 
         Page<PaymentDto> result = paymentRepository.findAll(spec, pageable).map(mapper::toDto);
         return new RestPage<>(result);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "paymentStatistics", key = "'global'")
+    public PaymentStatisticDto getStatistics() {
+        BigDecimal amountMin = paymentRepository.getMinAmount();
+        BigDecimal amountMax = paymentRepository.getMaxAmount();
+
+        return new PaymentStatisticDto(amountMin, amountMax);
     }
 }
