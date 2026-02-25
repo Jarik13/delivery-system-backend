@@ -38,5 +38,23 @@ public record WaybillShipmentDto(
         String shipmentStatusName,
 
         @Schema(description = "Дата створення")
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+
+        @Schema(description = "Тип відправлення (Стандартна / Експрес)", example = "Експрес")
+        String shipmentTypeName,
+
+        @Schema(description = "Опис вмісту посилки", example = "Велосипед")
+        String parcelDescription,
+
+        @Schema(description = "Чи оплачено повністю")
+        Boolean isFullyPaid,
+
+        @Schema(description = "Сума до сплати (залишок)", example = "250.00")
+        BigDecimal remainingAmount,
+
+        @Schema(description = "Чи є спеціальне пакування")
+        Boolean hasSpecialPackaging,
+
+        @Schema(description = "Дата видачі отримувачу")
+        LocalDateTime issuedAt
 ) {}

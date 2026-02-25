@@ -35,6 +35,33 @@ public record WaybillDto(
         @Schema(description = "Кількість відправлень", accessMode = Schema.AccessMode.READ_ONLY)
         Integer shipmentsCount,
 
+        @Schema(description = "Місто відправлення (перший сегмент)", accessMode = Schema.AccessMode.READ_ONLY)
+        String originCityName,
+
+        @Schema(description = "Місто призначення (останній сегмент)", accessMode = Schema.AccessMode.READ_ONLY)
+        String destinationCityName,
+
+        @Schema(description = "Назва маршруту (напр. 'Київ → Харків → Дніпро')", accessMode = Schema.AccessMode.READ_ONLY)
+        String routeSummary,
+
+        @Schema(description = "Загальна відстань маршруту (км)", accessMode = Schema.AccessMode.READ_ONLY)
+        BigDecimal totalDistanceKm,
+
+        @Schema(description = "Статус накладної (агрегований зі статусів відправлень)", accessMode = Schema.AccessMode.READ_ONLY)
+        String statusSummary,
+
+        @Schema(description = "Кількість доставлених відправлень", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer deliveredCount,
+
+        @Schema(description = "Запланована дата відправлення (з прив'язаного рейсу)", accessMode = Schema.AccessMode.READ_ONLY)
+        LocalDateTime scheduledDeparture,
+
+        @Schema(description = "Запланована дата прибуття (з прив'язаного рейсу)", accessMode = Schema.AccessMode.READ_ONLY)
+        LocalDateTime scheduledArrival,
+
+        @Schema(description = "Номер рейсу до якого прив'язана накладна", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer tripNumber,
+
         @Schema(description = "Список відправлень", accessMode = Schema.AccessMode.READ_ONLY)
         List<WaybillShipmentDto> shipments
 ) {}
