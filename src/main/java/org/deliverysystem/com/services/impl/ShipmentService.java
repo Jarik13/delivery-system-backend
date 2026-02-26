@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, Integer> {
@@ -45,6 +46,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     private final StreetRepository streetRepository;
     private final AddressHouseRepository addressHouseRepository;
     private final AddressRepository addressRepository;
+    private final WaybillRouteStatusRepository waybillRouteStatusRepository;
 
     public ShipmentService(ShipmentRepository repo, ShipmentMapper mapper,
                            ParcelRepository parcelRepository, ClientRepository clientRepository,
@@ -52,7 +54,8 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                            StorageConditionRepository storageConditionRepository, BoxVariantRepository boxVariantRepository, DeliveryPointRepository deliveryPointRepository,
                            PaymentRepository paymentRepository, ParcelTypeRepository parcelTypeRepository, ShipmentBoxRepository shipmentBoxRepository,
                            ShipmentOriginDeliveryPointRepository originDeliveryPointRepository, ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository, ShipmentOriginAddressRepository originAddressRepository,
-                           ShipmentDestinationAddressRepository destinationAddressRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository) {
+                           ShipmentDestinationAddressRepository destinationAddressRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
+                           WaybillRouteStatusRepository waybillRouteStatusRepository) {
         super(mapper, repo);
         this.shipmentRepository = repo;
         this.parcelRepository = parcelRepository;
@@ -74,6 +77,8 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         this.streetRepository = streetRepository;
         this.addressHouseRepository = addressHouseRepository;
         this.addressRepository = addressRepository;
+
+        this.waybillRouteStatusRepository = waybillRouteStatusRepository;
     }
 
     public CalculatedPriceResponseDto calculatePrices(ShipmentPriceCalculationRequestDto req) {
@@ -300,12 +305,20 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                 .orElseThrow(() -> new EntityNotFoundException("Shipment not found"));
         List<ShipmentMovementDto> history = new ArrayList<>();
 
+        Map<String, String> statusMap = waybillRouteStatusRepository.findAll()
+                .stream()
+                .collect(Collectors.toMap(
+                        WaybillRouteStatus::getName,
+                        WaybillRouteStatus::getName
+                ));
+
         if (shipment.getOriginDeliveryPoint() != null && shipment.getOriginDeliveryPoint().getDeliveryPoint() != null) {
+            var deliveryPoint = shipment.getOriginDeliveryPoint().getDeliveryPoint();
             history.add(new ShipmentMovementDto(
                     shipment.getCreatedAt(),
-                    shipment.getOriginDeliveryPoint().getDeliveryPoint().getCity().getName(),
-                    shipment.getOriginDeliveryPoint().getDeliveryPoint().getName(),
-                    "Прийнято до відправлення"
+                    deliveryPoint.getCity().getName(),
+                    deliveryPoint.getName(),
+                    statusMap.getOrDefault("Прийнято до відправлення", "")
             ));
         }
 
@@ -313,17 +326,30 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
             shipment.getShipmentWaybills().forEach(sw -> {
                 if (sw.getWaybill() != null && sw.getWaybill().getWaybillRoutes() != null) {
                     sw.getWaybill().getWaybillRoutes().forEach(wr -> {
-                        if (wr.getTrip() != null && wr.getTrip().getActualArrivalTime() != null
-                            && wr.getRoute() != null
+                        if (wr.getRoute() != null
                             && wr.getRoute().getDestinationBranch() != null
                             && wr.getRoute().getDestinationBranch().getDeliveryPoint() != null) {
 
-                            history.add(new ShipmentMovementDto(
-                                    wr.getTrip().getActualArrivalTime(),
-                                    wr.getRoute().getDestinationBranch().getDeliveryPoint().getCity().getName(),
-                                    wr.getRoute().getDestinationBranch().getDeliveryPoint().getName(),
-                                    "Прибуло на транзитний вузол"
-                            ));
+                            String cityName = wr.getRoute().getDestinationBranch().getDeliveryPoint().getCity().getName();
+                            String pointName = wr.getRoute().getDestinationBranch().getDeliveryPoint().getName();
+
+                            if (wr.getArrivedAt() != null) {
+                                history.add(new ShipmentMovementDto(
+                                        wr.getArrivedAt(),
+                                        cityName,
+                                        pointName,
+                                        statusMap.getOrDefault("Прибуло до відділення", "")
+                                ));
+                            }
+
+                            if (wr.getDepartedAt() != null) {
+                                history.add(new ShipmentMovementDto(
+                                        wr.getDepartedAt(),
+                                        cityName,
+                                        pointName,
+                                        statusMap.getOrDefault("Виїхало з відділення", "")
+                                ));
+                            }
                         }
                     });
                 }
@@ -336,7 +362,8 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                     String cityName = "";
                     String fullAddress = "Адреса отримувача";
 
-                    if (shipment.getDestinationAddress() != null && shipment.getDestinationAddress().getAddress() != null) {
+                    if (shipment.getDestinationAddress() != null
+                        && shipment.getDestinationAddress().getAddress() != null) {
 
                         var addr = shipment.getDestinationAddress().getAddress();
                         var house = addr.getHouse();
@@ -350,43 +377,42 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                         if (house != null && house.getStreet() != null) {
                             sb.append(house.getStreet().getName());
                         }
-
                         if (house != null && house.getNumber() != null) {
                             if (sb.length() > 0) sb.append(", ");
                             sb.append("буд. ").append(house.getNumber());
                         }
-
                         if (addr.getApartmentNumber() != null) {
                             if (sb.length() > 0) sb.append(", ");
                             sb.append("кв. ").append(addr.getApartmentNumber());
                         }
 
-                        if (sb.length() > 0) {
-                            fullAddress = sb.toString();
-                        }
+                        if (sb.length() > 0) fullAddress = sb.toString();
                     }
 
                     history.add(new ShipmentMovementDto(
                             item.getDeliveredAt(),
                             cityName,
                             fullAddress,
-                            "Доставлено кур'єром"
+                            statusMap.getOrDefault("Доставлено кур'єром", "")
                     ));
                 }
             });
         }
 
-        if (shipment.getIssuedAt() != null) {
-            String locationName = "Відділення отримання";
-            String cityName = "";
+        if (shipment.getIssuedAt() != null
+            && shipment.getDestinationDeliveryPoint() != null
+            && shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null) {
 
-            if (shipment.getDestinationDeliveryPoint() != null && shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null) {
-                locationName = shipment.getDestinationDeliveryPoint().getDeliveryPoint().getName();
+            var deliveryPoint = shipment.getDestinationDeliveryPoint().getDeliveryPoint();
+            String locationName = deliveryPoint.getName();
+            String cityName = deliveryPoint.getCity() != null ? deliveryPoint.getCity().getName() : "";
 
-                if (shipment.getDestinationDeliveryPoint().getDeliveryPoint().getCity() != null) {
-                    cityName = shipment.getDestinationDeliveryPoint().getDeliveryPoint().getCity().getName();
-                }
-            }
+            history.add(new ShipmentMovementDto(
+                    shipment.getIssuedAt(),
+                    cityName,
+                    locationName,
+                    statusMap.getOrDefault("Видано отримувачу", "")
+            ));
         }
 
         return history.stream()
