@@ -6,6 +6,7 @@ import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.search.WaybillSearchCriteria;
 import org.deliverysystem.com.dtos.waybills.CreateWaybillDto;
 import org.deliverysystem.com.dtos.waybills.WaybillDto;
+import org.deliverysystem.com.dtos.waybills.WaybillStatisticsDto;
 import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.mappers.WaybillMapper;
 import org.deliverysystem.com.repositories.*;
@@ -66,6 +67,16 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
                 .and(SpecificationUtils.equal("createdBy.id", criteria.createdById()));
 
         return new RestPage<>(waybillRepository.findAll(spec, pageable).map(mapper::toDto));
+    }
+
+    @Transactional(readOnly = true)
+    public WaybillStatisticsDto getStatistics() {
+        BigDecimal totalWeightMin = waybillRepository.findMinTotalWeight().orElse(BigDecimal.ZERO);
+        BigDecimal totalWeightMax = waybillRepository.findMaxTotalWeight().orElse(new BigDecimal("5000"));
+        BigDecimal volumeMin = waybillRepository.findMinVolume().orElse(BigDecimal.ZERO);
+        BigDecimal volumeMax = waybillRepository.findMaxVolume().orElse(new BigDecimal("5000"));
+
+        return new WaybillStatisticsDto(totalWeightMin, totalWeightMax, volumeMin, volumeMax);
     }
 
     @Transactional(readOnly = true)

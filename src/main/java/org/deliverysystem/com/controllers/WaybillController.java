@@ -8,6 +8,7 @@ import org.deliverysystem.com.dtos.search.TripSearchCriteria;
 import org.deliverysystem.com.dtos.search.WaybillSearchCriteria;
 import org.deliverysystem.com.dtos.waybills.CreateWaybillDto;
 import org.deliverysystem.com.dtos.waybills.WaybillDto;
+import org.deliverysystem.com.dtos.waybills.WaybillStatisticsDto;
 import org.deliverysystem.com.export.WaybillExportContext;
 import org.deliverysystem.com.services.impl.WaybillService;
 import org.deliverysystem.com.utils.RestPage;
@@ -40,6 +41,12 @@ public class WaybillController {
             @ParameterObject Pageable pageable
     ) {
         return ResponseEntity.ok(waybillService.findAll(criteria, pageable));
+    }
+
+    @Operation(summary = "Статистика накладних (діапазони для фільтрів)")
+    @GetMapping("/statistics")
+    public ResponseEntity<WaybillStatisticsDto> getStatistics() {
+        return ResponseEntity.ok(waybillService.getStatistics());
     }
 
     @Operation(summary = "Отримати накладну за ID")
