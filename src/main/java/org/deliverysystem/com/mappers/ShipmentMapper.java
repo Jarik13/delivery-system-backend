@@ -131,8 +131,9 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
         try {
             BoxVariant bv = shipment.getShipmentBox().getBoxVariant();
             if (bv == null) return null;
-            String typeName = bv.getBoxType() != null ? bv.getBoxType().getName() : null;
-            return typeName != null ? typeName : "Коробка";
+            String typeName = bv.getBoxType() != null ? bv.getBoxType().getName() : "Коробка";
+            String variantName = bv.getName() != null ? bv.getName() : "";
+            return variantName.isEmpty() ? typeName : typeName + " " + variantName;
         } catch (Exception e) {
             return null;
         }
