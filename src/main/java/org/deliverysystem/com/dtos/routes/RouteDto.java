@@ -1,17 +1,12 @@
-package org.deliverysystem.com.dtos;
+package org.deliverysystem.com.dtos.routes;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import org.deliverysystem.com.annotations.DifferentBranches;
 
-@DifferentBranches
 @Schema(description = "Шаблон магістрального маршруту")
 public record RouteDto(
         @Schema(description = "Унікальний ідентифікатор маршруту", example = "25")
         Integer id,
 
-        @NotNull(message = "Оберіть відділення відправлення")
         @Schema(description = "ID відділення відправлення", example = "1")
         Integer originBranchId,
 
@@ -21,7 +16,6 @@ public record RouteDto(
         @Schema(description = "Назва міста відправлення", example = "Київ", accessMode = Schema.AccessMode.READ_ONLY)
         String originCityName,
 
-        @NotNull(message = "Оберіть відділення призначення")
         @Schema(description = "ID відділення призначення", example = "2")
         Integer destinationBranchId,
 
@@ -34,7 +28,6 @@ public record RouteDto(
         @Schema(description = "Чи потрібне сортування на маршруті", example = "false")
         Boolean needSorting,
 
-        @Positive(message = "Відстань повинна бути більшою за нуль")
         @Schema(description = "Відстань маршруту в кілометрах", example = "450.5")
         Float distanceKm
 ) {}

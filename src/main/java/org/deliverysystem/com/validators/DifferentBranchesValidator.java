@@ -1,7 +1,7 @@
 package org.deliverysystem.com.validators;
 
 import org.deliverysystem.com.annotations.DifferentBranches;
-import org.deliverysystem.com.dtos.RouteDto;
+import org.deliverysystem.com.dtos.routes.RouteDto;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
