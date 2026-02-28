@@ -7,6 +7,11 @@ import java.util.List;
 
 @Schema(description = "Запит на розрахунок вартості доставки")
 public record ShipmentPriceCalculationRequestDto(
+        @NotBlank(message = "Опис вмісту не може бути порожнім")
+        @Size(min = 2, max = 50, message = "Опис вмісту має бути від 2 до 50 символів")
+        @Schema(description = "Опис вмісту посилки")
+        String contentDescription,
+
         @NotNull(message = "Вага є обов'язковою для розрахунку")
         @Positive(message = "Вага повинна бути більшою за 0")
         @Schema(description = "Фізична вага (кг)", example = "5.5")
@@ -21,6 +26,7 @@ public record ShipmentPriceCalculationRequestDto(
         @Schema(description = "ID типу посилки")
         Integer parcelTypeId,
 
+        @NotEmpty(message = "Оберіть хоча б одну умову зберігання")
         @Schema(description = "Список ID додаткових умов зберігання")
         List<Integer> storageConditionIds,
 

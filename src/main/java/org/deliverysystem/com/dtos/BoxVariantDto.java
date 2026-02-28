@@ -10,6 +10,10 @@ public record BoxVariantDto(
         @Schema(description = "ID варіанту коробки", example = "1")
         Integer id,
 
+        @NotNull(message = "Назва не може бути порожньою")
+        @Schema(description = "Назва варіанту пакування", example = "S")
+        String name,
+
         @NotNull(message = "Ціна не може бути порожньою")
         @Positive(message = "Ціна має бути більшою за 0")
         @Schema(description = "Ціна коробки", example = "25.50")

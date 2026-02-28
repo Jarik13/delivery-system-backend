@@ -139,7 +139,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         shipment.setShipmentStatus(statusRepository.getReferenceById(1));
 
         CalculatedPriceResponseDto p = calculatePrices(new ShipmentPriceCalculationRequestDto(
-                dto.actualWeight(), dto.declaredValue(), dto.parcelTypeId(),
+                dto.contentDescription(), dto.actualWeight(), dto.declaredValue(), dto.parcelTypeId(),
                 dto.storageConditionIds(), dto.boxVariantId(), dto.shipmentTypeId(), 0, 0));
 
         Price price = new Price();
