@@ -3,20 +3,19 @@ package org.deliverysystem.com.dtos.waybills;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-
 import java.util.List;
 
 public record CreateWaybillDto(
-        @NotNull(message = "Рейс обов'язковий")
+        @NotNull(message = "Оберіть рейс для накладної")
         Integer tripId,
 
-        @NotNull(message = "Маршрут обов'язковий")
+        @NotNull(message = "Оберіть сегмент маршруту")
         Integer routeId,
 
-        @NotNull(message = "Порядковий номер сегменту обов'язковий")
-        @Positive
+        @NotNull(message = "Порядковий номер сегменту є обов'язковим")
+        @Positive(message = "Порядковий номер сегменту повинен бути більшим за нуль")
         Integer tripSequenceNumber,
 
-        @NotEmpty(message = "Накладна має містити хоча б одне відправлення")
+        @NotEmpty(message = "Оберіть хоча б одне відправлення для накладної")
         List<Integer> shipmentIds
 ) {}
