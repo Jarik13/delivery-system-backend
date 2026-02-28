@@ -80,13 +80,6 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
     }
 
     @Transactional(readOnly = true)
-    public WaybillDto findByNumber(Integer number) {
-        return waybillRepository.findByNumber(number)
-                .map(mapper::toDto)
-                .orElseThrow(() -> new EntityNotFoundException(ErrorMessage.WAYBILL_NOT_FOUND_BY_NUMBER + number));
-    }
-
-    @Transactional(readOnly = true)
     public List<WaybillDto> findAllForExport(Integer number) {
         if (number != null) {
             return waybillRepository.findByNumber(number).map(w -> List.of(mapper.toDto(w))).orElse(List.of());

@@ -57,6 +57,8 @@ public record TripDto(
         CoordinateDto destinationCoordinates,
 
         @Schema(accessMode = Schema.AccessMode.READ_ONLY)
-        List<WaypointCoordinateDto> waypointCoordinates
-) {
-}
+        List<WaypointCoordinateDto> waypointCoordinates,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        List<WaybillRefDto> waybills
+) {}

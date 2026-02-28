@@ -2,6 +2,7 @@ package org.deliverysystem.com.mappers;
 
 import org.deliverysystem.com.dtos.trips.CoordinateDto;
 import org.deliverysystem.com.dtos.trips.TripDto;
+import org.deliverysystem.com.dtos.trips.WaybillRefDto;
 import org.deliverysystem.com.dtos.trips.WaypointCoordinateDto;
 import org.deliverysystem.com.entities.Driver;
 import org.deliverysystem.com.entities.Trip;
@@ -32,6 +33,7 @@ public interface TripMapper extends GenericMapper<Trip, TripDto> {
     @Mapping(target = "originCoordinates", expression = "java(getOriginCoordinates(entity))")
     @Mapping(target = "destinationCoordinates", expression = "java(getDestinationCoordinates(entity))")
     @Mapping(target = "waypointCoordinates", expression = "java(getWaypointCoordinates(entity))")
+    @Mapping(source = "waybillRoutes", target = "waybills", qualifiedByName = "mapWaybills")
     TripDto toDto(Trip entity);
 
     @Override
@@ -162,6 +164,15 @@ public interface TripMapper extends GenericMapper<Trip, TripDto> {
                 .sum();
 
         return (float) total;
+    }
+
+    @Named("mapWaybills")
+    default List<WaybillRefDto> mapWaybills(List<WaybillRoute> waybillRoutes) {
+        if (waybillRoutes == null) return Collections.emptyList();
+        return waybillRoutes.stream()
+                .filter(wr -> wr.getWaybill() != null)
+                .map(wr -> new WaybillRefDto(wr.getWaybill().getId(), wr.getWaybill().getNumber()))
+                .toList();
     }
 
     default CoordinateDto getOriginCoordinates(Trip trip) {

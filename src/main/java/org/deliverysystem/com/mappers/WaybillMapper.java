@@ -27,9 +27,8 @@ public abstract class WaybillMapper implements GenericMapper<Waybill, WaybillDto
     @Mapping(source = "shipmentWaybills", target = "shipments", qualifiedByName = "mapShipments")
     @Mapping(source = "shipmentWaybills", target = "deliveredCount", qualifiedByName = "mapDeliveredCount")
     @Mapping(source = "shipmentWaybills", target = "statusSummary", qualifiedByName = "mapStatusSummary")
-    @Mapping(source = "shipmentWaybills", target = "originCityName", qualifiedByName = "mapOriginCity")
-    @Mapping(source = "shipmentWaybills", target = "destinationCityName", qualifiedByName = "mapDestinationCity")
-    @Mapping(source = "shipmentWaybills", target = "routeSummary", qualifiedByName = "mapRouteSummary")
+    @Mapping(source = "waybillRoutes", target = "tripId", qualifiedByName = "mapTripId")
+    @Mapping(source = "waybillRoutes", target = "tripNumber", qualifiedByName = "mapTripNumber")
     public abstract WaybillDto toDto(Waybill entity);
 
     @Override
@@ -112,34 +111,23 @@ public abstract class WaybillMapper implements GenericMapper<Waybill, WaybillDto
         return "У дорозі";
     }
 
-    @Named("mapOriginCity")
-    String mapOriginCity(List<ShipmentWaybill> shipmentWaybills) {
-        if (shipmentWaybills == null || shipmentWaybills.isEmpty()) return null;
-        return shipmentWaybills.stream()
-                .filter(sw -> sw.getShipment() != null && sw.getSequenceNumber() != null)
-                .min(Comparator.comparing(ShipmentWaybill::getSequenceNumber))
-                .map(sw -> resolveOriginCity(sw.getShipment()))
+    @Named("mapTripId")
+    Integer mapTripId(List<WaybillRoute> waybillRoutes) {
+        if (waybillRoutes == null || waybillRoutes.isEmpty()) return null;
+        return waybillRoutes.stream()
+                .filter(wr -> wr.getTrip() != null)
+                .findFirst()
+                .map(wr -> wr.getTrip().getId())
                 .orElse(null);
     }
 
-    @Named("mapDestinationCity")
-    String mapDestinationCity(List<ShipmentWaybill> shipmentWaybills) {
-        if (shipmentWaybills == null || shipmentWaybills.isEmpty()) return null;
-        return shipmentWaybills.stream()
-                .filter(sw -> sw.getShipment() != null && sw.getSequenceNumber() != null)
-                .max(Comparator.comparing(ShipmentWaybill::getSequenceNumber))
-                .map(sw -> resolveDestinationCity(sw.getShipment()))
+    @Named("mapTripNumber")
+    Integer mapTripNumber(List<WaybillRoute> waybillRoutes) {
+        if (waybillRoutes == null || waybillRoutes.isEmpty()) return null;
+        return waybillRoutes.stream()
+                .filter(wr -> wr.getTrip() != null)
+                .findFirst()
+                .map(wr -> wr.getTrip().getNumber())
                 .orElse(null);
-    }
-
-    @Named("mapRouteSummary")
-    String mapRouteSummary(List<ShipmentWaybill> shipmentWaybills) {
-        String origin = mapOriginCity(shipmentWaybills);
-        String destination = mapDestinationCity(shipmentWaybills);
-        if (origin == null && destination == null) return null;
-        if (origin == null) return destination;
-        if (destination == null) return origin;
-        if (origin.equals(destination)) return origin;
-        return origin + " → " + destination;
     }
 }

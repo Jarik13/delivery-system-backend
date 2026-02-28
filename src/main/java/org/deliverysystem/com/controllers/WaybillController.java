@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.deliverysystem.com.dtos.search.TripSearchCriteria;
 import org.deliverysystem.com.dtos.search.WaybillSearchCriteria;
 import org.deliverysystem.com.dtos.waybills.CreateWaybillDto;
 import org.deliverysystem.com.dtos.waybills.WaybillDto;
@@ -13,7 +12,6 @@ import org.deliverysystem.com.export.WaybillExportContext;
 import org.deliverysystem.com.services.impl.WaybillService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,12 +51,6 @@ public class WaybillController {
     @GetMapping("/{id}")
     public ResponseEntity<WaybillDto> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(waybillService.findById(id));
-    }
-
-    @Operation(summary = "Знайти накладну за номером документу")
-    @GetMapping("/search")
-    public ResponseEntity<WaybillDto> findByNumber(@RequestParam Integer number) {
-        return ResponseEntity.ok(waybillService.findByNumber(number));
     }
 
     @Operation(summary = "Створити накладну")

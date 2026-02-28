@@ -35,15 +35,6 @@ public record WaybillDto(
         @Schema(description = "Кількість відправлень", accessMode = Schema.AccessMode.READ_ONLY)
         Integer shipmentsCount,
 
-        @Schema(description = "Місто відправлення (перший сегмент)", accessMode = Schema.AccessMode.READ_ONLY)
-        String originCityName,
-
-        @Schema(description = "Місто призначення (останній сегмент)", accessMode = Schema.AccessMode.READ_ONLY)
-        String destinationCityName,
-
-        @Schema(description = "Назва маршруту (напр. 'Київ → Харків → Дніпро')", accessMode = Schema.AccessMode.READ_ONLY)
-        String routeSummary,
-
         @Schema(description = "Загальна відстань маршруту (км)", accessMode = Schema.AccessMode.READ_ONLY)
         BigDecimal totalDistanceKm,
 
@@ -58,6 +49,9 @@ public record WaybillDto(
 
         @Schema(description = "Запланована дата прибуття (з прив'язаного рейсу)", accessMode = Schema.AccessMode.READ_ONLY)
         LocalDateTime scheduledArrival,
+
+        @Schema(description = "ID рейсу до якого прив'язана накладна", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer tripId,
 
         @Schema(description = "Номер рейсу до якого прив'язана накладна", accessMode = Schema.AccessMode.READ_ONLY)
         Integer tripNumber,
