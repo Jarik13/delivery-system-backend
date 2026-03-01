@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -70,4 +71,14 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
 
     @Query("SELECT MAX(s.price.insuranceFee) FROM Shipment s")
     BigDecimal getMaxInsuranceFee();
+
+    @Query("SELECT s FROM Shipment s " +
+           "JOIN s.originDeliveryPoint sodp " +
+           "JOIN s.destinationDeliveryPoint sddp " +
+           "WHERE sodp.deliveryPoint.id = :originPointId " +
+           "AND sddp.deliveryPoint.id = :destPointId " +
+           "AND s.shipmentStatus.id IN (1, 2, 4) " +
+           "AND s.issuedAt IS NULL " +
+           "AND NOT EXISTS (SELECT sw FROM ShipmentWaybill sw WHERE sw.shipment = s)")
+    List<Shipment> findSuggestedShipments(Integer originPointId, Integer destPointId);
 }

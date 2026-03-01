@@ -43,6 +43,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     private final ShipmentOriginAddressRepository originAddressRepository;
     private final ShipmentDestinationAddressRepository destinationAddressRepository;
 
+    private final RouteRepository routeRepository;
     private final StreetRepository streetRepository;
     private final AddressHouseRepository addressHouseRepository;
     private final AddressRepository addressRepository;
@@ -54,7 +55,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                            StorageConditionRepository storageConditionRepository, BoxVariantRepository boxVariantRepository, DeliveryPointRepository deliveryPointRepository,
                            PaymentRepository paymentRepository, ParcelTypeRepository parcelTypeRepository, ShipmentBoxRepository shipmentBoxRepository,
                            ShipmentOriginDeliveryPointRepository originDeliveryPointRepository, ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository, ShipmentOriginAddressRepository originAddressRepository,
-                           ShipmentDestinationAddressRepository destinationAddressRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
+                           ShipmentDestinationAddressRepository destinationAddressRepository, RouteRepository routeRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
                            WaybillRouteStatusRepository waybillRouteStatusRepository) {
         super(mapper, repo);
         this.shipmentRepository = repo;
@@ -74,6 +75,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         this.originAddressRepository = originAddressRepository;
         this.destinationAddressRepository = destinationAddressRepository;
 
+        this.routeRepository = routeRepository;
         this.streetRepository = streetRepository;
         this.addressHouseRepository = addressHouseRepository;
         this.addressRepository = addressRepository;
@@ -417,6 +419,20 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
 
         return history.stream()
                 .sorted(Comparator.comparing(ShipmentMovementDto::time))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ShipmentDto> getSuggestedShipments(Integer routeId) {
+        Route route = routeRepository.findById(routeId).orElseThrow(() -> new EntityNotFoundException("Route not found"));
+
+        Integer originPointId = route.getOriginBranch().getDeliveryPoint().getId();
+        Integer destPointId = route.getDestinationBranch().getDeliveryPoint().getId();
+
+        List<Shipment> suggested = shipmentRepository.findSuggestedShipments(originPointId, destPointId);
+
+        return suggested.stream()
+                .map(mapper::toDto)
                 .toList();
     }
 

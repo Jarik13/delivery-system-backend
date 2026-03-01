@@ -44,6 +44,12 @@ public class ShipmentController {
         return ResponseEntity.ok(shipmentService.getShipmentHistory(id));
     }
 
+    @Operation(summary = "Отримати рекомендовані відправлення для сегмента маршруту")
+    @GetMapping(value = "/suggested", params = "routeId")
+    public ResponseEntity<List<ShipmentDto>> getSuggested(@RequestParam Integer routeId) {
+        return ResponseEntity.ok(shipmentService.getSuggestedShipments(routeId));
+    }
+
     @Operation(summary = "Отримати за ID")
     @GetMapping("/{id}")
     public ResponseEntity<ShipmentDto> getById(@PathVariable Integer id) {
