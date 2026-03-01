@@ -4,9 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.search.WaybillSearchCriteria;
-import org.deliverysystem.com.dtos.waybills.CreateWaybillDto;
-import org.deliverysystem.com.dtos.waybills.WaybillDto;
-import org.deliverysystem.com.dtos.waybills.WaybillStatisticsDto;
+import org.deliverysystem.com.dtos.waybills.*;
 import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.mappers.WaybillMapper;
 import org.deliverysystem.com.repositories.*;
@@ -77,6 +75,103 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
         BigDecimal volumeMax = waybillRepository.findMaxVolume().orElse(new BigDecimal("5000"));
 
         return new WaybillStatisticsDto(totalWeightMin, totalWeightMax, volumeMin, volumeMax);
+    }
+
+    @Transactional(readOnly = true)
+    public WaybillDetailsDto getWaybillDetails(Integer waybillId) {
+        Waybill waybill = repository.findById(waybillId)
+                .orElseThrow(() -> new EntityNotFoundException("Накладна не знайдена: " + waybillId));
+
+        List<WaybillShipmentDto> shipments = shipmentWaybillRepository
+                .findByWaybillIdOrderBySequenceNumber(waybillId)
+                .stream()
+                .map(sw -> {
+                    Shipment s = sw.getShipment();
+
+                    String originCity = null;
+                    String destCity = null;
+
+                    if (s.getOriginDeliveryPoint() != null && s.getOriginDeliveryPoint().getDeliveryPoint() != null)
+                        originCity = s.getOriginDeliveryPoint().getDeliveryPoint().getCity() != null
+                                ? s.getOriginDeliveryPoint().getDeliveryPoint().getCity().getName() : null;
+
+                    if (s.getDestinationDeliveryPoint() != null && s.getDestinationDeliveryPoint().getDeliveryPoint() != null)
+                        destCity = s.getDestinationDeliveryPoint().getDeliveryPoint().getCity() != null
+                                ? s.getDestinationDeliveryPoint().getDeliveryPoint().getCity().getName() : null;
+
+                    BigDecimal actualWeight = (s.getPrice() != null && s.getPrice().getWeight() != null)
+                            ? s.getPrice().getWeight().divide(new BigDecimal("4.5"), 2, RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
+
+                    BigDecimal total = s.getPrice() != null ? s.getPrice().getTotal() : BigDecimal.ZERO;
+
+                    BigDecimal remaining = BigDecimal.ZERO;
+                    boolean fullyPaid = false;
+                    if (s.getPayments() != null) {
+                        BigDecimal paid = s.getPayments().stream()
+                                .map(p -> p.getAmount() != null ? p.getAmount() : BigDecimal.ZERO)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        fullyPaid = paid.compareTo(total) >= 0;
+                        remaining = total.subtract(paid).max(BigDecimal.ZERO);
+                    }
+
+                    boolean hasSpecialPackaging = s.getPrice() != null
+                                                  && s.getPrice().getSpecialPackaging() != null
+                                                  && s.getPrice().getSpecialPackaging().compareTo(BigDecimal.ZERO) > 0;
+
+                    return new WaybillShipmentDto(
+                            s.getId(),
+                            s.getTrackingNumber(),
+                            sw.getSequenceNumber(),
+                            formatClientName(s.getSender()),
+                            formatClientName(s.getRecipient()),
+                            originCity,
+                            destCity,
+                            actualWeight,
+                            total,
+                            s.getShipmentStatus() != null ? s.getShipmentStatus().getName() : null,
+                            s.getCreatedAt(),
+                            s.getShipmentType() != null ? s.getShipmentType().getName() : null,
+                            s.getParcel() != null ? s.getParcel().getContentDescription() : null,
+                            fullyPaid,
+                            remaining,
+                            hasSpecialPackaging,
+                            s.getIssuedAt()
+                    );
+                })
+                .toList();
+
+        return new WaybillDetailsDto(
+                waybill.getId(),
+                waybill.getNumber(),
+                waybill.getCreatedAt(),
+                waybill.getTotalWeight(),
+                waybill.getVolume(),
+                waybill.getCreatedBy() != null ? formatEmployeeName(waybill.getCreatedBy()) : null,
+                shipments
+        );
+    }
+
+    private String formatClientName(Client client) {
+        if (client == null) return null;
+        return "%s %s %s".formatted(
+                nullToEmpty(client.getLastName()),
+                nullToEmpty(client.getFirstName()),
+                nullToEmpty(client.getMiddleName())
+        ).trim();
+    }
+
+    private String formatEmployeeName(Employee employee) {
+        if (employee == null) return null;
+        return "%s %s %s".formatted(
+                nullToEmpty(employee.getLastName()),
+                nullToEmpty(employee.getFirstName()),
+                nullToEmpty(employee.getMiddleName())
+        ).trim();
+    }
+
+    private String nullToEmpty(String s) {
+        return s != null ? s : "";
     }
 
     @Transactional(readOnly = true)

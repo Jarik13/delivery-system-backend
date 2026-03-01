@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.deliverysystem.com.dtos.search.WaybillSearchCriteria;
 import org.deliverysystem.com.dtos.waybills.CreateWaybillDto;
+import org.deliverysystem.com.dtos.waybills.WaybillDetailsDto;
 import org.deliverysystem.com.dtos.waybills.WaybillDto;
 import org.deliverysystem.com.dtos.waybills.WaybillStatisticsDto;
 import org.deliverysystem.com.export.WaybillExportContext;
@@ -45,6 +46,12 @@ public class WaybillController {
     @GetMapping("/statistics")
     public ResponseEntity<WaybillStatisticsDto> getStatistics() {
         return ResponseEntity.ok(waybillService.getStatistics());
+    }
+
+    @Operation(summary = "Отримати накладну з відправленнями")
+    @GetMapping("/{id}/details")
+    public ResponseEntity<WaybillDetailsDto> getDetails(@PathVariable Integer id) {
+        return ResponseEntity.ok(waybillService.getWaybillDetails(id));
     }
 
     @Operation(summary = "Отримати накладну за ID")

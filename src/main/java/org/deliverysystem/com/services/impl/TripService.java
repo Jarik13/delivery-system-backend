@@ -174,8 +174,13 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
 
                     boolean hasWaybill = waybillRouteRepository.existsByTripIdAndRouteIdAndWaybillIsNotNull(tripId, route.getId());
 
+                    Integer waybillId = waybillRouteRepository
+                            .findWaybillIdByTripIdAndRouteId(tripId, route.getId())
+                            .orElse(null);
+
                     return new TripSegmentDto(
                             route.getId(),
+                            waybillId,
                             wr.getSequenceNumber(),
                             originCity,
                             destCity,
