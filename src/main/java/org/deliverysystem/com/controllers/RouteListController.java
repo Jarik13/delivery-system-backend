@@ -5,7 +5,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.route_lists.RouteListDto;
+import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
 import org.deliverysystem.com.dtos.search.RouteListSearchCriteria;
+import org.deliverysystem.com.dtos.waybills.WaybillStatisticsDto;
 import org.deliverysystem.com.services.impl.RouteListService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
@@ -27,6 +29,12 @@ public class RouteListController {
             @ParameterObject RouteListSearchCriteria criteria,
             @ParameterObject Pageable pageable) {
         return ResponseEntity.ok(routeListService.findAll(criteria, pageable));
+    }
+
+    @Operation(summary = "Статистика накладних (діапазони для фільтрів)")
+    @GetMapping("/statistics")
+    public ResponseEntity<RouteListStatisticsDto> getStatistics() {
+        return ResponseEntity.ok(routeListService.getStatistics());
     }
 
     @GetMapping("/{id}")

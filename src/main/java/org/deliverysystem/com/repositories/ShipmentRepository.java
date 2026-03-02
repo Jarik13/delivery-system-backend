@@ -14,9 +14,6 @@ import java.util.Optional;
 
 @Repository
 public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, JpaSpecificationExecutor<Shipment> {
-    Optional<Shipment> findByTrackingNumber(String trackingNumber);
-    Page<Shipment> findAllBySenderId(Integer senderId, Pageable pageable);
-
     @Query("SELECT MIN(s.parcel.actualWeight) FROM Shipment s")
     BigDecimal getMinWeight();
 
