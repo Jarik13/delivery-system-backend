@@ -5,7 +5,10 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -14,10 +17,8 @@ import java.util.Date;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class JwtService {
     private static final String TOKEN_TYPE = "token_type";
-    private static final String USER_ID = "user_id";
 
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
@@ -29,52 +30,42 @@ public class JwtService {
     private Long refreshTokenExpiration;
 
     public JwtService() throws Exception {
-        privateKey = KeyUtils.loadPrivateKey("keys/local-only/private_key.pem");
-        publicKey = KeyUtils.loadPublicKey("keys/local-only/public_key.pem");
+        this.privateKey = KeyUtils.loadPrivateKey("keys/local-only/private_key.pem");
+        this.publicKey  = KeyUtils.loadPublicKey("keys/local-only/public_key.pem");
     }
 
-    public String generateAccessToken(String email, String userId) {
-        Map<String, Object> claims = Map.of(
-                TOKEN_TYPE, "access_token",
-                USER_ID, userId
-        );
-        return buildToken(email, claims, accessTokenExpiration);
+    public String generateAccessToken(UserDetails userDetails) {
+        Map<String, Object> claims = Map.of(TOKEN_TYPE, "access_token");
+        return buildToken(userDetails.getUsername(), claims, accessTokenExpiration);
     }
 
-    public String generateRefreshToken(String email, String userId) {
-        Map<String, Object> claims = Map.of(
-                TOKEN_TYPE, "refresh_token",
-                USER_ID, userId
-        );
-        return buildToken(email, claims, refreshTokenExpiration);
+    public String generateRefreshToken(UserDetails userDetails) {
+        Map<String, Object> claims = Map.of(TOKEN_TYPE, "refresh_token");
+        return buildToken(userDetails.getUsername(), claims, refreshTokenExpiration);
     }
 
     public String refreshAccessToken(String refreshToken) {
         Claims claims = extractClaims(refreshToken);
-        if (!"refresh_token".equals(claims.get(TOKEN_TYPE))) {
-            throw new RuntimeException("Invalid refresh token");
-        }
+        if (!"refresh_token".equals(claims.get(TOKEN_TYPE)))
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Невалідний тип токену");
+        if (isTokenExpired(refreshToken))
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token протермінований");
 
-        if (isTokenExpired(refreshToken)) {
-            throw new RuntimeException("Token has expired");
-        }
-
-        return buildToken(claims.getSubject(), claims, accessTokenExpiration);
+        return buildToken(claims.getSubject(), Map.of(TOKEN_TYPE, "access_token"), accessTokenExpiration);
     }
 
     public boolean isTokenValid(String token, String expectedEmail) {
-        String email = extractEmail(token);
-        return email.equals(expectedEmail) && !isTokenExpired(token);
+        try {
+            String email = extractEmail(token);
+            return email.equals(expectedEmail) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public String extractEmail(String token) {
         return extractClaims(token).getSubject();
     }
-
-    public String extractUserId(String token) {
-        return extractClaims(token).get(USER_ID, String.class);
-    }
-
 
     private String buildToken(String email, Map<String, Object> claims, long expiration) {
         return Jwts.builder()
@@ -98,7 +89,7 @@ public class JwtService {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (JwtException ex) {
-            throw new RuntimeException("Invalid JWT token", ex);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Невалідний JWT токен");
         }
     }
 }
