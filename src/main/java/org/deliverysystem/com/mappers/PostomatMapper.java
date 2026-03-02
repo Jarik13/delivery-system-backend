@@ -1,6 +1,6 @@
 package org.deliverysystem.com.mappers;
 
-import org.deliverysystem.com.dtos.PostomatDto;
+import org.deliverysystem.com.dtos.postomats.PostomatDto;
 import org.deliverysystem.com.entities.Postomat;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

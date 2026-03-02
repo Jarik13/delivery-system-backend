@@ -13,4 +13,10 @@ import org.springframework.stereotype.Repository;
 public interface PostomatRepository extends JpaRepository<Postomat, Integer>, JpaSpecificationExecutor<Postomat> {
     @Query("SELECT p FROM Postomat p WHERE p.deliveryPoint.city.id = :cityId")
     Page<Postomat> findAllByCityId(@Param("cityId") Integer cityId, Pageable pageable);
+
+    @Query("SELECT MIN(p.cellsCount) FROM Postomat p")
+    Integer getMinCellsCount();
+
+    @Query("SELECT MAX(p.cellsCount) FROM Postomat p")
+    Integer getMaxCellsCount();
 }

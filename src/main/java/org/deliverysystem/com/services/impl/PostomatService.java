@@ -2,13 +2,16 @@ package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.constants.ErrorMessage;
-import org.deliverysystem.com.dtos.PostomatDto;
+import org.deliverysystem.com.dtos.postomats.PostomatDto;
+import org.deliverysystem.com.dtos.postomats.PostomatStatisticsDto;
 import org.deliverysystem.com.dtos.search.PostomatSearchCriteria;
 import org.deliverysystem.com.entities.Postomat;
 import org.deliverysystem.com.mappers.PostomatMapper;
 import org.deliverysystem.com.repositories.PostomatRepository;
 import org.deliverysystem.com.repositories.CityRepository;
+import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -45,9 +48,9 @@ public class PostomatService extends AbstractBaseService<Postomat, PostomatDto, 
     }
 
     @Transactional(readOnly = true)
-    public Page<PostomatDto> findAll(PostomatSearchCriteria criteria, Pageable pageable) {
+    public RestPage<PostomatDto> findAll(PostomatSearchCriteria criteria, Pageable pageable) {
         if (criteria == null) {
-            return postomatRepository.findAll(pageable).map(mapper::toDto);
+            return new RestPage<>(postomatRepository.findAll(pageable).map(mapper::toDto));
         }
 
         Specification<Postomat> spec = Specification.where(SpecificationUtils.<Postomat>iLike("deliveryPoint.name", criteria.name()))
@@ -58,12 +61,17 @@ public class PostomatService extends AbstractBaseService<Postomat, PostomatDto, 
                 .and(SpecificationUtils.gte("cellsCount", criteria.cellsCountMin()))
                 .and(SpecificationUtils.lte("cellsCount", criteria.cellsCountMax()));
 
-        return postomatRepository.findAll(spec, pageable).map(mapper::toDto);
+        return new RestPage<>(postomatRepository.findAll(spec, pageable).map(mapper::toDto));
     }
 
     @Transactional(readOnly = true)
     public Page<PostomatDto> findAllByCityId(Integer cityId, Pageable pageable) {
         return postomatRepository.findAllByCityId(cityId, pageable).map(mapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public PostomatStatisticsDto getStatistics() {
+        return new PostomatStatisticsDto(postomatRepository.getMinCellsCount(), postomatRepository.getMaxCellsCount());
     }
 
     private void setRelationships(Postomat entity, PostomatDto dto) {
