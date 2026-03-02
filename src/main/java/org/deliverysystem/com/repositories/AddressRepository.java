@@ -4,7 +4,9 @@ import org.deliverysystem.com.entities.Address;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface AddressRepository extends JpaRepository<Address, Integer> {
-    // Тут зазвичай шукають конкретну адресу, тому складних методів пошуку поки не треба
+    Optional<Address> findByHouseIdAndApartmentNumber(Integer houseId, Integer apartmentNumber);
 }

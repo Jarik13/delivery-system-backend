@@ -2,13 +2,14 @@ package org.deliverysystem.com.dtos.search;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import java.util.List;
 
 public record ParcelSearchCriteria(
         @Schema(description = "Пошук в описі вмісту")
         String name,
 
-        @Schema(description = "ID типу посилки")
-        Integer parcelTypeId,
+        @Schema(description = "Список типів посилок")
+        List<Integer> parcelTypes,
 
         @Schema(description = "Мін. вага")
         BigDecimal weightMin,

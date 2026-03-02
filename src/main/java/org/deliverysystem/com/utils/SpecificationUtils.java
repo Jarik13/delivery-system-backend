@@ -6,18 +6,27 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.Collection;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SpecificationUtils {
     private static <S> Specification<S> empty() {
         return (root, query, cb) -> null;
     }
 
-    public static <S> Specification<S> iLike(String field, String value) {
-        if (value == null || value.trim().isEmpty()) {
+    public static <S> Specification<S> iLike(String field, Object value) {
+        if (value == null) {
             return empty();
         }
+
+        String stringValue = String.valueOf(value).trim();
+
+        if (stringValue.isEmpty()) {
+            return empty();
+        }
+
         return (root, query, cb) ->
-                cb.like(cb.lower(getPath(root, field).as(String.class)), "%" + value.toLowerCase() + "%");
+                cb.like(cb.lower(getPath(root, field).as(String.class)), "%" + stringValue.toLowerCase() + "%");
     }
 
     public static <S, T extends Comparable<? super T>> Specification<S> gte(String field, T value) {
@@ -39,6 +48,16 @@ public class SpecificationUtils {
             return empty();
         }
         return (root, query, cb) -> cb.equal(getPath(root, field), value);
+    }
+
+    public static <S> Specification<S> in(String field, Collection<?> values) {
+        if (values == null || values.isEmpty()) return empty();
+        return (root, query, cb) -> getPath(root, field).in(values);
+    }
+
+    public static <S> Specification<S> notIn(String field, Collection<?> values) {
+        if (values == null || values.isEmpty()) return empty();
+        return (root, query, cb) -> cb.not(getPath(root, field).in(values));
     }
 
     private static <Y, S> Path<Y> getPath(Root<S> root, String attributeName) {

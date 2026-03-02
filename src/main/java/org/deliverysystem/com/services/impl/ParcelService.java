@@ -2,8 +2,8 @@ package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.constants.ErrorMessage;
-import org.deliverysystem.com.dtos.ParcelDto;
-import org.deliverysystem.com.dtos.ParcelStatisticsDto;
+import org.deliverysystem.com.dtos.parcels.ParcelDto;
+import org.deliverysystem.com.dtos.parcels.ParcelStatisticsDto;
 import org.deliverysystem.com.dtos.search.ParcelSearchCriteria;
 import org.deliverysystem.com.entities.Parcel;
 import org.deliverysystem.com.entities.StorageCondition;
@@ -11,7 +11,11 @@ import org.deliverysystem.com.mappers.ParcelMapper;
 import org.deliverysystem.com.repositories.ParcelRepository;
 import org.deliverysystem.com.repositories.ParcelTypeRepository;
 import org.deliverysystem.com.repositories.StorageConditionRepository;
+import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -38,6 +42,7 @@ public class ParcelService extends AbstractBaseService<Parcel, ParcelDto, Intege
     }
 
     @Override
+    @CacheEvict(value = {"parcelStatistics", "parcelPages"}, allEntries = true)
     public ParcelDto create(ParcelDto dto) {
         Parcel entity = mapper.toEntity(dto);
         setRelationships(entity, dto);
@@ -45,6 +50,8 @@ public class ParcelService extends AbstractBaseService<Parcel, ParcelDto, Intege
     }
 
     @Override
+    @CacheEvict(value = {"parcelStatistics", "parcelPages"}, allEntries = true)
+    @CachePut(value = "parcels", key = "#id")
     public ParcelDto update(Integer id, ParcelDto dto) {
         if (!parcelRepository.existsById(id)) {
             throw new EntityNotFoundException(ErrorMessage.ENTITY_NOT_FOUND_FOR_UPDATE);
@@ -56,22 +63,26 @@ public class ParcelService extends AbstractBaseService<Parcel, ParcelDto, Intege
     }
 
     @Transactional(readOnly = true)
-    public Page<ParcelDto> findAll(ParcelSearchCriteria criteria, Pageable pageable) {
+    @Cacheable(value = "parcelPages", key = "{#criteria, #pageable}", condition = "#pageable.pageNumber < 5")
+    public RestPage<ParcelDto> findAll(ParcelSearchCriteria criteria, Pageable pageable) {
         if (criteria == null) {
-            return parcelRepository.findAll(pageable).map(mapper::toDto);
+            Page<ParcelDto> result = parcelRepository.findAll(pageable).map(mapper::toDto);
+            return new RestPage<>(result);
         }
 
         Specification<Parcel> spec = Specification.where(SpecificationUtils.<Parcel>iLike("contentDescription", criteria.name()))
-                .and(SpecificationUtils.equal("parcelType.id", criteria.parcelTypeId()))
+                .and(SpecificationUtils.in("parcelType.id", criteria.parcelTypes()))
                 .and(SpecificationUtils.gte("actualWeight", criteria.weightMin()))
                 .and(SpecificationUtils.lte("actualWeight", criteria.weightMax()))
                 .and(SpecificationUtils.gte("declaredValue", criteria.declaredValueMin()))
                 .and(SpecificationUtils.lte("declaredValue", criteria.declaredValueMax()));
 
-        return parcelRepository.findAll(spec, pageable).map(mapper::toDto);
+        Page<ParcelDto> result = parcelRepository.findAll(spec, pageable).map(mapper::toDto);
+        return new RestPage<>(result);
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "parcelStatistics", key = "'global'")
     public ParcelStatisticsDto getStatistics() {
         BigDecimal minWeight = parcelRepository.findMinWeight();
         BigDecimal maxWeight = parcelRepository.findMaxWeight();

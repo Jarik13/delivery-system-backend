@@ -6,9 +6,14 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.deliverysystem.com.annotations.GenerateCustomIntegerNumber;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "waybills")
@@ -16,6 +21,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Waybill {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,6 +32,7 @@ public class Waybill {
     @Column(name = "waybill_number", unique = true, updatable = false)
     private Integer number;
 
+    @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -35,6 +42,13 @@ public class Waybill {
     @Column(name = "waybill_volume")
     private BigDecimal volume;
 
+    @OneToMany(mappedBy = "waybill", cascade = CascadeType.ALL)
+    private List<ShipmentWaybill> shipmentWaybills = new ArrayList<>();
+
+    @OneToMany(mappedBy = "waybill", cascade = CascadeType.ALL)
+    private List<WaybillRoute> waybillRoutes = new ArrayList<>();
+
+    @CreatedBy
     @ManyToOne
     @JoinColumn(name = "created_by_id")
     private Employee createdBy;

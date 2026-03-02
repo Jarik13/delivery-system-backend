@@ -2,36 +2,82 @@ package org.deliverysystem.com.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.deliverysystem.com.dtos.ShipmentDto;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
+import org.deliverysystem.com.dtos.shipments.*;
 import org.deliverysystem.com.services.impl.ShipmentService;
-import org.springframework.data.domain.Page;
+import org.deliverysystem.com.utils.RestPage;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/shipments")
-@Tag(name = "Shipments", description = "Відправлення")
-public class ShipmentController extends AbstractBaseController<ShipmentDto, Integer> {
+@RequiredArgsConstructor
+@Tag(name = "Shipments", description = "Керування відправленнями (ТТН)")
+public class ShipmentController {
     private final ShipmentService shipmentService;
 
-    public ShipmentController(ShipmentService service) {
-        super(service);
-        this.shipmentService = service;
+    @Operation(summary = "Отримати всі відправлення з фільтрацією")
+    @GetMapping
+    public ResponseEntity<RestPage<ShipmentDto>> getAll(
+            @ParameterObject ShipmentSearchCriteria criteria,
+            @ParameterObject Pageable pageable
+    ) {
+        return ResponseEntity.ok(shipmentService.findAll(criteria, pageable));
     }
 
-    @Operation(summary = "Знайти за трек-номером")
-    @GetMapping("/tracking/{tracking}")
-    public ResponseEntity<ShipmentDto> findByTracking(@PathVariable String tracking) {
-        return ResponseEntity.ok(shipmentService.findByTrackingNumber(tracking));
+    @Operation(summary = "Отримати статистику по відправленням (мін/макс значення)")
+    @GetMapping("/statistics")
+    public ResponseEntity<ShipmentStatisticsDto> getStatistics() {
+        return ResponseEntity.ok(shipmentService.getStatistics());
     }
 
-    @Operation(summary = "Історія відправлень клієнта")
-    @GetMapping("/by-sender/{senderId}")
-    public ResponseEntity<Page<ShipmentDto>> getBySender(@PathVariable Integer senderId, Pageable pageable) {
-        return ResponseEntity.ok(shipmentService.findAllBySenderId(senderId, pageable));
+    @Operation(summary = "Отримати історію руху відправлення за ID (трекінг)")
+    @GetMapping("/{id}/movement")
+    public ResponseEntity<List<ShipmentMovementDto>> getMovementHistory(@PathVariable Integer id) {
+        return ResponseEntity.ok(shipmentService.getShipmentHistory(id));
+    }
+
+    @Operation(summary = "Отримати рекомендовані відправлення для сегмента маршруту")
+    @GetMapping(value = "/suggested", params = "routeId")
+    public ResponseEntity<List<ShipmentDto>> getSuggested(@RequestParam Integer routeId) {
+        return ResponseEntity.ok(shipmentService.getSuggestedShipments(routeId));
+    }
+
+    @Operation(summary = "Отримати за ID")
+    @GetMapping("/{id}")
+    public ResponseEntity<ShipmentDto> getById(@PathVariable Integer id) {
+        return ResponseEntity.ok(shipmentService.findById(id));
+    }
+
+    @Operation(summary = "Розрахувати вартість доставки (Тарифікація)")
+    @PostMapping("/calculate")
+    public ResponseEntity<CalculatedPriceResponseDto> calculate(@Valid @RequestBody ShipmentPriceCalculationRequestDto request) {
+        return ResponseEntity.ok(shipmentService.calculatePrices(request));
+    }
+
+    @Operation(summary = "Створити нове відправлення (ТТН)")
+    @PostMapping
+    public ResponseEntity<ShipmentDto> create(@Valid @RequestBody CreateShipmentDto dto) {
+        return new ResponseEntity<>(shipmentService.createComplexShipment(dto), HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Оновити існуюче відправлення")
+    @PutMapping("/{id}")
+    public ResponseEntity<ShipmentDto> update(@PathVariable Integer id, @Valid @RequestBody ShipmentDto dto) {
+        return ResponseEntity.ok(shipmentService.update(id, dto));
+    }
+
+    @Operation(summary = "Видалити відправлення")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+        shipmentService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,11 +1,28 @@
+server:
+  port: 4000
+
 spring:
   application:
     name: delivery-system-backend
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+      cache-null-values: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
   datasource:
-    url: jdbc:sqlserver://DESKTOP-PO7GJL8:1434;databaseName=parcels_db;encrypt=false;trustServerCertificate=true;
-    username: username
-    password: password
+    url: jdbc:sqlserver://DESKTOP-PO7GJL8:1434;databaseName=parcels_db_test;encrypt=false;trustServerCertificate=true;
+    username: parcels_db_user
+    password: password!
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    hikari:
+      maximum-pool-size: 20
   jpa:
     hibernate:
       ddl-auto: validate

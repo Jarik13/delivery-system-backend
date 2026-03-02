@@ -19,6 +19,9 @@ public class BoxVariant {
     @Column(name = "box_variant_id")
     private Integer id;
 
+    @Column(name = "box_variant_name")
+    private String name;
+
     @Column(name = "box_variant_price")
     private BigDecimal price;
 

@@ -2,8 +2,12 @@ package org.deliverysystem.com.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.CityDto;
+import org.deliverysystem.com.dtos.search.CitySearchCriteria;
 import org.deliverysystem.com.services.impl.CityService;
+import org.deliverysystem.com.utils.RestPage;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -12,12 +16,23 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/cities")
 @Tag(name = "Cities", description = "Довідник міст")
-public class CityController extends AbstractBaseController<CityDto, Integer> {
+@RequiredArgsConstructor
+public class CityController {
     private final CityService cityService;
 
-    public CityController(CityService service) {
-        super(service);
-        this.cityService = service;
+    @GetMapping
+    @Operation(summary = "Отримати список міст з фільтрацією")
+    public ResponseEntity<RestPage<CityDto>> getAll(
+            @ParameterObject CitySearchCriteria criteria,
+            @ParameterObject Pageable pageable
+    ) {
+        return ResponseEntity.ok(cityService.findAll(criteria, pageable));
+    }
+
+    @GetMapping("/{cityId}")
+    @Operation(summary = "Отримати місто за id")
+    public ResponseEntity<CityDto> getById(@PathVariable Integer cityId) {
+        return ResponseEntity.ok(cityService.findById(cityId));
     }
 
     @Operation(summary = "Отримати міста за ID району")

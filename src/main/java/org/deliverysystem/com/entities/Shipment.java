@@ -6,8 +6,13 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.deliverysystem.com.annotations.GenerateShipmentTrackingNumber;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "shipments")
@@ -15,6 +20,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Shipment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,6 +40,7 @@ public class Shipment {
     @Column(name = "is_partially_paid")
     private Boolean partiallyPaid;
 
+    @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -44,6 +51,34 @@ public class Shipment {
     @JoinColumn(name = "parcel_id", unique = true)
     private Parcel parcel;
 
+    @OneToOne(mappedBy = "shipment")
+    private ShipmentOriginDeliveryPoint originDeliveryPoint;
+
+    @OneToOne(mappedBy = "shipment")
+    private ShipmentDestinationDeliveryPoint destinationDeliveryPoint;
+
+    @OneToOne(mappedBy = "shipment")
+    private ShipmentOriginAddress originAddress;
+
+    @OneToOne(mappedBy = "shipment")
+    private ShipmentDestinationAddress destinationAddress;
+
+    @OneToOne(mappedBy = "shipment")
+    private ShipmentBox shipmentBox;
+
+    @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL)
+    private List<ShipmentWaybill> shipmentWaybills = new ArrayList<>();
+
+    @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL)
+    private List<RouteSheetItem> routeSheetItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL)
+    private List<Payment> payments;
+
+    @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL)
+    private List<Return> returns;
+
+    @CreatedBy
     @ManyToOne
     @JoinColumn(name = "created_by_id")
     private Employee createdBy;

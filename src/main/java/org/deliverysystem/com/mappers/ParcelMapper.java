@@ -1,6 +1,6 @@
 package org.deliverysystem.com.mappers;
 
-import org.deliverysystem.com.dtos.ParcelDto;
+import org.deliverysystem.com.dtos.parcels.ParcelDto;
 import org.deliverysystem.com.entities.Parcel;
 import org.deliverysystem.com.entities.StorageCondition;
 import org.mapstruct.Mapper;

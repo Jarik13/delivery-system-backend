@@ -28,4 +28,7 @@ public class Route {
 
     @Column(name = "is_need_sorting")
     private Boolean needSorting;
+
+    @Column(name = "route_distance_km")
+    private Float distanceKm;
 }

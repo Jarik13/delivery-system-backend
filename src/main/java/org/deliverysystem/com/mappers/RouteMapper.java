@@ -1,6 +1,6 @@
 package org.deliverysystem.com.mappers;
 
-import org.deliverysystem.com.dtos.RouteDto;
+import org.deliverysystem.com.dtos.routes.RouteDto;
 import org.deliverysystem.com.entities.Route;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

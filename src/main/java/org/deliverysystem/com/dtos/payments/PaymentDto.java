@@ -1,4 +1,4 @@
-package org.deliverysystem.com.dtos;
+package org.deliverysystem.com.dtos.payments;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +26,13 @@ public record PaymentDto(
         @Schema(description = "ID типу оплати (карта/готівка)", example = "1")
         Integer paymentTypeId,
 
+        @Schema(description = "Назва типу оплати (Готівка, Карта тощо)", accessMode = Schema.AccessMode.READ_ONLY)
+        String paymentTypeName,
+
         @NotNull
         @Schema(description = "ID відправлення", example = "100")
-        Integer shipmentId
+        Integer shipmentId,
+
+        @Schema(description = "Трек-номер відправлення", accessMode = Schema.AccessMode.READ_ONLY)
+        String shipmentTrackingNumber
 ) {}

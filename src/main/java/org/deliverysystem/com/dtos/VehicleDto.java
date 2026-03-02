@@ -16,10 +16,40 @@ public record VehicleDto(
         String licensePlate,
 
         @NotNull
-        @Schema(description = "ID статусу активності (на лінії, в ремонті)", example = "1")
+        @Schema(description = "ID статусу активності", example = "1")
         Integer statusId,
 
         @NotNull
         @Schema(description = "ID моделі авто (Fleet)", example = "5")
-        Integer fleetId
+        Integer fleetId,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        String activityStatusName,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        String brandName,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        String bodyTypeName,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        String fuelTypeName,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        String transmissionTypeName,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        String driveTypeName,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        java.math.BigDecimal loadCapacity,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        java.math.BigDecimal cargoVolume,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        java.math.BigDecimal engineCapacity,
+
+        @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+        Integer maxSpeed
 ) {}

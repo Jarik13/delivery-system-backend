@@ -1,4 +1,4 @@
-package org.deliverysystem.com.dtos;
+package org.deliverysystem.com.dtos.returns;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -18,6 +18,9 @@ public record ReturnDto(
         @Schema(description = "Дата ініціації")
         LocalDateTime initiationDate,
 
+        @Schema(description = "Дата завершення", accessMode = Schema.AccessMode.READ_ONLY)
+        LocalDateTime completionDate,
+
         @Schema(description = "Сума до повернення", example = "500.00")
         BigDecimal refundAmount,
 
@@ -27,5 +30,8 @@ public record ReturnDto(
 
         @NotNull
         @Schema(description = "ID причини повернення", example = "2")
-        Integer returnReasonId
+        Integer returnReasonId,
+
+        @Schema(description = "Назва причини повернення (текст)", accessMode = Schema.AccessMode.READ_ONLY)
+        String returnReasonName
 ) {}

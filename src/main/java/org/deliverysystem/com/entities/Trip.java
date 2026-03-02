@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import org.deliverysystem.com.annotations.GenerateCustomIntegerNumber;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "trips")
@@ -28,11 +30,17 @@ public class Trip {
     @Column(name = "trip_scheduled_departure_time")
     private LocalDateTime scheduledDepartureTime;
 
+    @Column(name = "trip_scheduled_arrival_time")
+    private LocalDateTime scheduledArrivalTime;
+
     @Column(name = "trip_actual_departure_time")
     private LocalDateTime actualDepartureTime;
 
     @Column(name = "trip_actual_arrival_time")
     private LocalDateTime actualArrivalTime;
+
+    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WaybillRoute> waybillRoutes = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "trip_status_id")
