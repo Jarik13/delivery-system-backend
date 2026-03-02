@@ -13,17 +13,21 @@ import org.deliverysystem.com.enums.Role;
         @AttributeOverride(name = "firstName", column = @Column(name = "employee_first_name")),
         @AttributeOverride(name = "lastName", column = @Column(name = "employee_last_name")),
         @AttributeOverride(name = "middleName", column = @Column(name = "employee_middle_name")),
-        @AttributeOverride(name = "phoneNumber", column = @Column(name = "employee_phone_number", unique = true))
+        @AttributeOverride(name = "phoneNumber", column = @Column(name = "employee_phone_number", unique = true)),
+        @AttributeOverride(name = "password", column = @Column(name = "employee_password")),
 })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Employee extends BaseUser {
+public class Employee extends AuthUser {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "employee_id")
     private Integer id;
+
+    @Column(name = "employee_email", unique = true)
+    private String email;
 
     @ManyToOne
     @JoinColumn(name = "branch_id")
@@ -31,6 +35,6 @@ public class Employee extends BaseUser {
 
     @Override
     public Role getRole() {
-        return Role.EMPLOYEE;
+        return Role.BRANCH_OPERATOR;
     }
 }

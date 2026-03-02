@@ -1,12 +1,12 @@
 package org.deliverysystem.com.repositories;
 
-import org.deliverysystem.com.entities.Courier;
+import org.deliverysystem.com.entities.SuperAdmin;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface CourierRepository extends JpaRepository<Courier, Integer> {
-    Optional<Courier> findByEmail(String email);
+public interface SuperAdminRepository extends JpaRepository<SuperAdmin, Integer> {
+    Optional<SuperAdmin> findByEmail(String email);
 }

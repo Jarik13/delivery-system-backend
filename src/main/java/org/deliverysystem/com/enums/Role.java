@@ -1,5 +1,9 @@
 package org.deliverysystem.com.enums;
 
 public enum Role {
-    CLIENT, COURIER, DRIVER, EMPLOYEE
+    BRANCH_OPERATOR,
+    DISPATCHER,
+    COURIER,
+    ADMIN,
+    SUPER_ADMIN
 }

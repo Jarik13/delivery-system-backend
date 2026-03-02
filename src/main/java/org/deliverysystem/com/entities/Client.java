@@ -27,9 +27,4 @@ public class Client extends BaseUser {
 
     @Column(name = "client_email", unique = true)
     private String email;
-
-    @Override
-    public Role getRole() {
-        return Role.CLIENT;
-    }
 }
