@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 public interface ReturnMapper extends GenericMapper<Return, ReturnDto> {
     @Override
     @Mapping(source = "shipment.id", target = "shipmentId")
+    @Mapping(source = "shipment.trackingNumber", target = "shipmentTrackingNumber")
     @Mapping(source = "returnReason.id", target = "returnReasonId")
     @Mapping(source = "returnReason.name", target = "returnReasonName")
     @Mapping(source = "trackingNumber", target = "returnTrackingNumber")

@@ -28,6 +28,9 @@ public record ReturnDto(
         @Schema(description = "ID оригінального відправлення", example = "100")
         Integer shipmentId,
 
+        @Schema(description = "Трек-номер оригінального відправлення", accessMode = Schema.AccessMode.READ_ONLY)
+        String shipmentTrackingNumber,
+
         @NotNull
         @Schema(description = "ID причини повернення", example = "2")
         Integer returnReasonId,
