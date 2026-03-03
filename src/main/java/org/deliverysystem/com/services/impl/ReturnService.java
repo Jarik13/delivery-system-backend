@@ -1,6 +1,7 @@
 package org.deliverysystem.com.services.impl;
 
 import org.deliverysystem.com.dtos.returns.ReturnDto;
+import org.deliverysystem.com.dtos.returns.ReturnStatisticsDto;
 import org.deliverysystem.com.dtos.search.ReturnSearchCriteria;
 import org.deliverysystem.com.entities.Return;
 import org.deliverysystem.com.mappers.ReturnMapper;
@@ -34,8 +35,19 @@ public class ReturnService extends AbstractBaseService<Return, ReturnDto, Intege
                 .and(SpecificationUtils.iLike("shipment.trackingNumber", criteria.shipmentTrackingNumber()))
                 .and(SpecificationUtils.in("returnReason.id", criteria.returnReasons()))
                 .and(SpecificationUtils.gte("initiationDate", criteria.initiationDateFrom()))
-                .and(SpecificationUtils.lte("initiationDate", criteria.initiationDateTo()));
+                .and(SpecificationUtils.lte("initiationDate", criteria.initiationDateTo()))
+                .and(SpecificationUtils.gte("refundAmount", criteria.refundAmountMin()))
+                .and(SpecificationUtils.lte("refundAmount", criteria.refundAmountMax()));
 
         return new RestPage<>(returnRepository.findAll(spec, pageable).map(mapper::toDto));
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "returnStatistics", key = "'global'")
+    public ReturnStatisticsDto getStatistics() {
+        return new ReturnStatisticsDto(
+                returnRepository.getMinRefundAmount(),
+                returnRepository.getMaxRefundAmount()
+        );
     }
 }

@@ -1,5 +1,6 @@
 package org.deliverysystem.com.dtos.search;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -8,5 +9,7 @@ public record ReturnSearchCriteria(
         String shipmentTrackingNumber,
         List<Integer> returnReasons,
         LocalDateTime initiationDateFrom,
-        LocalDateTime initiationDateTo
+        LocalDateTime initiationDateTo,
+        BigDecimal refundAmountMin,
+        BigDecimal refundAmountMax
 ) {}

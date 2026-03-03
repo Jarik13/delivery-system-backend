@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.returns.ReturnDto;
+import org.deliverysystem.com.dtos.returns.ReturnStatisticsDto;
 import org.deliverysystem.com.dtos.search.ReturnSearchCriteria;
 import org.deliverysystem.com.services.impl.ReturnService;
 import org.deliverysystem.com.utils.RestPage;
@@ -28,5 +29,11 @@ public class ReturnController {
             @ParameterObject Pageable pageable
     ) {
         return ResponseEntity.ok(returnService.findAll(criteria, pageable));
+    }
+
+    @Operation(summary = "Отримати статистику по поверненням (мін/макс сума)")
+    @GetMapping("/statistics")
+    public ResponseEntity<ReturnStatisticsDto> getStatistics() {
+        return ResponseEntity.ok(returnService.getStatistics());
     }
 }
