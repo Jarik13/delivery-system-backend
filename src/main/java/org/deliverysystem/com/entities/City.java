@@ -21,6 +21,12 @@ public class City {
     @Column(name = "city_name")
     private String name;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @ManyToOne
     @JoinColumn(name = "district_id")
     private District district;
