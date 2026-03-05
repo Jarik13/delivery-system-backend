@@ -55,9 +55,3 @@ keycloak:
   realm: delivery-system
   client-id: delivery-backend
   client-secret: ZSCfc5oKnt0GrRfEXIsYRFPqBMmz3QOO
-
-app:
-  security:
-    jwt:
-
-      refresh-token-expiration: 604800000
