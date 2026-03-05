@@ -8,5 +8,4 @@ import java.util.Optional;
 
 @Repository
 public interface CourierRepository extends JpaRepository<Courier, Integer> {
-    Optional<Courier> findByEmail(String email);
 }
