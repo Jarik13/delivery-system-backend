@@ -274,6 +274,14 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     @Transactional(readOnly = true)
     @Cacheable(value = "shipmentStatistics", key = "'global'")
     public ShipmentStatisticsDto getStatistics() {
+        Map<Integer, Long> countByStatus = shipmentRepository.countGroupByStatus()
+                .stream()
+                .collect(Collectors.toMap(r -> (Integer) r[0], r -> (Long) r[1]));
+
+        Map<Integer, Long> countByType = shipmentRepository.countGroupByType()
+                .stream()
+                .collect(Collectors.toMap(r -> (Integer) r[0], r -> (Long) r[1]));
+
         return new ShipmentStatisticsDto(
                 defaultIfNull(shipmentRepository.getMinWeight(), BigDecimal.ZERO),
                 defaultIfNull(shipmentRepository.getMaxWeight(), new BigDecimal("100")),
@@ -297,7 +305,10 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                 defaultIfNull(shipmentRepository.getMaxSpecialPackagingPrice(), new BigDecimal("500")),
 
                 defaultIfNull(shipmentRepository.getMinInsuranceFee(), BigDecimal.ZERO),
-                defaultIfNull(shipmentRepository.getMaxInsuranceFee(), new BigDecimal("500"))
+                defaultIfNull(shipmentRepository.getMaxInsuranceFee(), new BigDecimal("500")),
+
+                countByStatus,
+                countByType
         );
     }
 
