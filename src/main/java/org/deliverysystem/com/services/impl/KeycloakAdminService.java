@@ -1,0 +1,118 @@
+package org.deliverysystem.com.services.impl;
+
+import org.deliverysystem.com.dtos.users.CreateUserDto;
+import org.deliverysystem.com.dtos.users.UserDto;
+import org.keycloak.admin.client.CreatedResponseUtil;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.keycloak.OAuth2Constants;
+
+import jakarta.ws.rs.core.Response;
+import java.util.List;
+
+@Service
+public class KeycloakAdminService {
+    @Value("${keycloak.server-url}")
+    private String serverUrl;
+
+    @Value("${keycloak.realm}")
+    private String realm;
+
+    @Value("${keycloak.client-id}")
+    private String clientId;
+
+    @Value("${keycloak.client-secret}")
+    private String clientSecret;
+
+    private static final List<String> SYSTEM_ROLES = List.of("EMPLOYEE", "COURIER", "DRIVER", "ADMIN", "SUPER_ADMIN");
+
+    private Keycloak getKeycloak() {
+        return KeycloakBuilder.builder()
+                .serverUrl(serverUrl)
+                .realm(realm)
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
+                .build();
+    }
+
+    public String createUser(CreateUserDto dto) {
+        RealmResource realmResource = getKeycloak().realm(realm);
+
+        List<UserRepresentation> existing = realmResource.users().searchByEmail(dto.email(), true);
+        if (!existing.isEmpty())
+            throw new IllegalArgumentException("Користувач з таким email вже існує");
+
+        UserRepresentation user = new UserRepresentation();
+        user.setEmail(dto.email());
+        user.setUsername(dto.email());
+        user.setFirstName(dto.firstName());
+        user.setLastName(dto.lastName());
+        user.setEnabled(true);
+        user.setEmailVerified(false);
+
+        Response response = realmResource.users().create(user);
+        String keycloakId = CreatedResponseUtil.getCreatedId(response);
+
+        RoleRepresentation roleRep = realmResource.roles().get(dto.role()).toRepresentation();
+        realmResource.users().get(keycloakId).roles().realmLevel().add(List.of(roleRep));
+
+        realmResource.users().get(keycloakId).executeActionsEmail(List.of("UPDATE_PASSWORD", "VERIFY_EMAIL"));
+
+        return keycloakId;
+    }
+
+    public List<UserDto> getAllUsers() {
+        RealmResource realmResource = getKeycloak().realm(realm);
+
+        return realmResource.users().list().stream()
+                .filter(u -> u.getUsername() != null && !u.getUsername().startsWith("service-account"))
+                .map(u -> {
+                    List<String> roles = realmResource.users().get(u.getId())
+                            .roles().realmLevel().listEffective().stream()
+                            .map(RoleRepresentation::getName)
+                            .filter(SYSTEM_ROLES::contains)
+                            .toList();
+
+                    String role = roles.isEmpty() ? "NONE" : roles.getFirst();
+
+                    return new UserDto(
+                            u.getId(),
+                            u.getEmail(),
+                            u.getFirstName(),
+                            u.getLastName(),
+                            role,
+                            Boolean.TRUE.equals(u.isEmailVerified())
+                    );
+                })
+                .toList();
+    }
+
+    public void deleteUser(String keycloakId) {
+        getKeycloak().realm(realm).users().delete(keycloakId);
+    }
+
+    public void resendVerificationEmail(String keycloakId) {
+        getKeycloak().realm(realm).users().get(keycloakId)
+                .executeActionsEmail(List.of("UPDATE_PASSWORD", "VERIFY_EMAIL"));
+    }
+
+    public void updateUserRole(String keycloakId, String newRole) {
+        RealmResource realmResource = getKeycloak().realm(realm);
+
+        List<RoleRepresentation> currentRoles = realmResource.users().get(keycloakId)
+                .roles().realmLevel().listEffective().stream()
+                .filter(r -> SYSTEM_ROLES.contains(r.getName()))
+                .toList();
+        if (!currentRoles.isEmpty())
+            realmResource.users().get(keycloakId).roles().realmLevel().remove(currentRoles);
+
+        RoleRepresentation roleRep = realmResource.roles().get(newRole).toRepresentation();
+        realmResource.users().get(keycloakId).roles().realmLevel().add(List.of(roleRep));
+    }
+}
