@@ -8,4 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface SuperAdminRepository extends JpaRepository<SuperAdmin, Integer> {
+    Optional<SuperAdmin> findByKeycloakId(String keycloakId);
 }
