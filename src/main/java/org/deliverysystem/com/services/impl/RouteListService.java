@@ -14,6 +14,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 public class RouteListService extends AbstractBaseService<RouteList, RouteListDto, Integer> {
     private final RouteListRepository routeListRepository;
@@ -43,9 +46,14 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
     @Transactional(readOnly = true)
     @Cacheable(value = "routeListStatistics", key = "'global'")
     public RouteListStatisticsDto getStatistics() {
+        Map<Integer, Long> countByStatus = routeListRepository.countGroupByStatus()
+                .stream()
+                .collect(Collectors.toMap(r -> (Integer) r[0], r -> (Long) r[1]));
+
         return new RouteListStatisticsDto(
                 routeListRepository.getMinTotalWeight(),
-                routeListRepository.getMaxTotalWeight()
+                routeListRepository.getMaxTotalWeight(),
+                countByStatus
         );
     }
 }

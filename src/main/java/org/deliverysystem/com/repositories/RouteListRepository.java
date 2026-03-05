@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
 @Repository
 public interface RouteListRepository extends JpaRepository<RouteList, Integer>, JpaSpecificationExecutor<RouteList> {
@@ -15,4 +17,7 @@ public interface RouteListRepository extends JpaRepository<RouteList, Integer>, 
 
     @Query("SELECT MAX(rl.totalWeight) FROM RouteList rl")
     BigDecimal getMaxTotalWeight();
+
+    @Query("SELECT rl.status.id, COUNT(rl) FROM RouteList rl GROUP BY rl.status.id")
+    List<Object[]> countGroupByStatus();
 }
