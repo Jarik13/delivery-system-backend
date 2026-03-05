@@ -37,6 +37,12 @@ spring:
         order_updates: true
         batch_versioned_data: true
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/delivery-system
+
 springdoc:
   api-docs:
     path: /api-docs
@@ -44,8 +50,14 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
 
+keycloak:
+  server-url: http://localhost:8180
+  realm: delivery-system
+  client-id: delivery-backend
+  client-secret: ZSCfc5oKnt0GrRfEXIsYRFPqBMmz3QOO
+
 app:
   security:
     jwt:
-      access-token-expiration: 86400000
+
       refresh-token-expiration: 604800000
