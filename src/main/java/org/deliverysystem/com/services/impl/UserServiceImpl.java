@@ -2,6 +2,7 @@ package org.deliverysystem.com.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.deliverysystem.com.annotations.Auditable;
 import org.deliverysystem.com.dtos.users.CreateUserDto;
 import org.deliverysystem.com.dtos.users.UserDto;
 import org.deliverysystem.com.enums.Role;
@@ -20,6 +21,7 @@ public class UserServiceImpl implements UserService {
     private final UserPersistenceStrategyRegistry strategyRegistry;
 
     @Override
+    @Auditable(action = "CREATE_USER", targetArgField = "email")
     @Transactional
     public UserDto createUser(CreateUserDto dto) {
         String keycloakId = keycloakAdminService.createUser(dto);
@@ -37,6 +39,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Auditable(action = "DELETE_USER")
     @Transactional
     public void deleteUser(String keycloakId) {
         keycloakAdminService.deleteUser(keycloakId);
@@ -48,12 +51,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Auditable(action = "RESEND_EMAIL")
     public void resendEmail(String keycloakId) {
         keycloakAdminService.resendVerificationEmail(keycloakId);
         log.info("Verification email resent: keycloakId={}", keycloakId);
     }
 
     @Override
+    @Auditable(action = "UPDATE_ROLE")
     public void updateRole(String keycloakId, String newRole) {
         keycloakAdminService.updateUserRole(keycloakId, Role.valueOf(newRole));
         log.info("Role updated: keycloakId={}, role={}", keycloakId, newRole);
