@@ -36,7 +36,44 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/ws/**", "/ws").permitAll()
+
+                        // Тільки SUPER_ADMIN
                         .requestMatchers("/api/v1/users/**").hasRole("SUPER_ADMIN")
+
+                        // Логістика — EMPLOYEE, DISPATCHER, ADMIN
+                        .requestMatchers("/api/v1/shipments/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/parcels/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/payments/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/returns/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/waybills/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/trips/**").hasAnyRole("DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/route-lists/**").hasAnyRole("COURIER", "DISPATCHER", "ADMIN")
+
+                        // Мережа доставки — EMPLOYEE, ADMIN
+                        .requestMatchers("/api/v1/branches/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/postomats/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/regions/**", "/api/v1/cities/**",
+                                "/api/v1/districts/**", "/api/v1/streets/**",
+                                "/api/v1/address-houses/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+
+                        // Автопарк — DISPATCHER, ADMIN
+                        .requestMatchers("/api/v1/routes/**").hasAnyRole("DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/fleets/**", "/api/v1/vehicles/**",
+                                "/api/v1/drivers/**").hasAnyRole("DISPATCHER", "ADMIN")
+                        .requestMatchers("/api/v1/fleet-brands/**", "/api/v1/fleet-body-types/**",
+                                "/api/v1/fleet-fuel-types/**", "/api/v1/fleet-transmission-types/**",
+                                "/api/v1/fleet-drive-types/**",
+                                "/api/v1/vehicle-activity-statuses/**",
+                                "/api/v1/trip-statuses/**").hasAnyRole("DISPATCHER", "ADMIN")
+
+                        // Довідники — EMPLOYEE, DISPATCHER, ADMIN
+                        .requestMatchers("/api/v1/box-types/**", "/api/v1/box-variants/**",
+                                "/api/v1/parcel-types/**", "/api/v1/shipment-types/**",
+                                "/api/v1/shipment-statuses/**", "/api/v1/storage-conditions/**",
+                                "/api/v1/return-reasons/**", "/api/v1/route-list-statuses/**",
+                                "/api/v1/branch-types/**", "/api/v1/payment-types/**")
+                        .hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
