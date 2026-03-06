@@ -1,5 +1,6 @@
 package org.deliverysystem.com.services.impl;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.auth.AuthResponse;
@@ -79,6 +80,62 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public AuthResponse refresh(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = null;
+
+        if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("refresh_token".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        if (refreshToken == null)
+            throw new BadCredentialsException("Refresh token відсутній");
+
+        String tokenUrl = serverUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("grant_type", "refresh_token");
+        body.add("client_id", clientId);
+        body.add("client_secret", clientSecret);
+        body.add("refresh_token", refreshToken);
+
+        try {
+            ResponseEntity<Map> keycloakResponse = restTemplate.postForEntity(
+                    tokenUrl,
+                    new HttpEntity<>(body, headers),
+                    Map.class
+            );
+
+            Map<String, Object> tokens = keycloakResponse.getBody();
+            String newAccessToken  = (String) tokens.get("access_token");
+            String newRefreshToken = (String) tokens.get("refresh_token");
+
+            ResponseCookie cookie = ResponseCookie.from("refresh_token", newRefreshToken)
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/api/v1/auth")
+                    .maxAge(604800)
+                    .sameSite("Strict")
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+            String role = extractRoleFromToken(newAccessToken);
+            String email = extractEmailFromToken(newAccessToken);
+
+            return new AuthResponse(newAccessToken, email, role);
+        } catch (HttpClientErrorException e) {
+            throw new BadCredentialsException("Refresh token недійсний");
+        }
+    }
+
+    @Override
     public void logout(HttpServletResponse response) {
         ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
@@ -105,6 +162,18 @@ public class AuthServiceImpl implements AuthService {
                     .orElse("ROLE_EMPLOYEE");
         } catch (Exception e) {
             return "ROLE_EMPLOYEE";
+        }
+    }
+
+    private String extractEmailFromToken(String accessToken) {
+        try {
+            String payload = accessToken.split("\\.")[1];
+            String decoded = new String(Base64.getUrlDecoder().decode(payload));
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> claims = mapper.readValue(decoded, Map.class);
+            return (String) claims.getOrDefault("email", "");
+        } catch (Exception e) {
+            return "";
         }
     }
 }
