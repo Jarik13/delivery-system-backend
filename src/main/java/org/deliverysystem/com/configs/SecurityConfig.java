@@ -37,42 +37,119 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/ws/**", "/ws").permitAll()
 
-                        // Тільки SUPER_ADMIN
+                        // ── SUPER_ADMIN ───────────────────────────────────────────────────
                         .requestMatchers("/api/v1/users/**").hasRole("SUPER_ADMIN")
 
-                        // Логістика — EMPLOYEE, DISPATCHER, ADMIN
-                        .requestMatchers("/api/v1/shipments/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/parcels/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/payments/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/returns/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/waybills/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/trips/**").hasAnyRole("DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/route-lists/**").hasAnyRole("COURIER", "DISPATCHER", "ADMIN")
+                        // ── Загальні класифікатори — читання EDA, запис тільки ADMIN ──────
+                        .requestMatchers(HttpMethod.GET, "/api/v1/box-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/box-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/box-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/box-types/**").hasRole("ADMIN")
 
-                        // Мережа доставки — EMPLOYEE, ADMIN
-                        .requestMatchers("/api/v1/branches/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/postomats/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/regions/**", "/api/v1/cities/**",
-                                "/api/v1/districts/**", "/api/v1/streets/**",
-                                "/api/v1/address-houses/**").hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/box-variants/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/box-variants/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/box-variants/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/box-variants/**").hasRole("ADMIN")
 
-                        // Автопарк — DISPATCHER, ADMIN
-                        .requestMatchers("/api/v1/routes/**").hasAnyRole("DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/fleets/**", "/api/v1/vehicles/**",
-                                "/api/v1/drivers/**").hasAnyRole("DISPATCHER", "ADMIN")
-                        .requestMatchers("/api/v1/fleet-brands/**", "/api/v1/fleet-body-types/**",
-                                "/api/v1/fleet-fuel-types/**", "/api/v1/fleet-transmission-types/**",
-                                "/api/v1/fleet-drive-types/**",
-                                "/api/v1/vehicle-activity-statuses/**",
-                                "/api/v1/trip-statuses/**").hasAnyRole("DISPATCHER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/parcel-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/parcel-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/parcel-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/parcel-types/**").hasRole("ADMIN")
 
-                        // Довідники — EMPLOYEE, DISPATCHER, ADMIN
-                        .requestMatchers("/api/v1/box-types/**", "/api/v1/box-variants/**",
-                                "/api/v1/parcel-types/**", "/api/v1/shipment-types/**",
-                                "/api/v1/shipment-statuses/**", "/api/v1/storage-conditions/**",
-                                "/api/v1/return-reasons/**", "/api/v1/route-list-statuses/**",
-                                "/api/v1/branch-types/**", "/api/v1/payment-types/**")
-                        .hasAnyRole("EMPLOYEE", "DISPATCHER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shipment-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/shipment-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/shipment-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/shipment-types/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shipment-statuses/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/shipment-statuses/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/shipment-statuses/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/shipment-statuses/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/storage-conditions/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/storage-conditions/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/storage-conditions/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/storage-conditions/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/return-reasons/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/return-reasons/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/return-reasons/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/return-reasons/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/route-list-statuses/**").hasAnyRole("EMPLOYEE", "COURIER", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/route-list-statuses/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/route-list-statuses/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/route-list-statuses/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/branch-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/branch-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/branch-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/branch-types/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/payment-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payment-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/payment-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/payment-types/**").hasRole("ADMIN")
+
+                        // ── Класифікатори автопарку — читання DRIVER, запис ADMIN ─────────
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-brands/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/fleet-brands/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-brands/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-brands/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-body-types/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/fleet-body-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-body-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-body-types/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-fuel-types/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/fleet-fuel-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-fuel-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-fuel-types/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-transmission-types/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/fleet-transmission-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-transmission-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-transmission-types/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-drive-types/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/fleet-drive-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-drive-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-drive-types/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/vehicle-activity-statuses/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/vehicle-activity-statuses/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/vehicle-activity-statuses/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/vehicle-activity-statuses/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/trip-statuses/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/trip-statuses/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/trip-statuses/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/trip-statuses/**").hasRole("ADMIN")
+
+                        // ── COURIER — маршрутні листи ─────────────────────────────────────
+                        .requestMatchers("/api/v1/route-lists/**").hasAnyRole("COURIER", "DRIVER")
+
+                        // ── DRIVER — перевезення ──────────────────────────────────────────
+                        .requestMatchers("/api/v1/trips/**").hasRole("DRIVER")
+                        .requestMatchers("/api/v1/routes/**").hasRole("DRIVER")
+                        .requestMatchers("/api/v1/waybills/**").hasRole("DRIVER")
+                        .requestMatchers("/api/v1/vehicles/**").hasRole("DRIVER")
+                        .requestMatchers("/api/v1/drivers/**").hasRole("DRIVER")
+                        .requestMatchers("/api/v1/fleets/**").hasRole("DRIVER")
+
+                        // ── EMPLOYEE — відправлення та мережа доставки ────────────────────
+                        .requestMatchers("/api/v1/shipments/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/parcels/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/payments/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/returns/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/branches/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/postomats/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/regions/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/cities/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/districts/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/streets/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/address-houses/**").hasAnyRole("EMPLOYEE", "DRIVER")
 
                         .anyRequest().authenticated()
                 )
