@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
 import org.deliverysystem.com.services.impl.ShipmentService;
@@ -64,8 +65,11 @@ public class ShipmentController {
 
     @Operation(summary = "Створити нове відправлення (ТТН)")
     @PostMapping
-    public ResponseEntity<ShipmentDto> create(@Valid @RequestBody CreateShipmentDto dto) {
-        return new ResponseEntity<>(shipmentService.createComplexShipment(dto), HttpStatus.CREATED);
+    public ResponseEntity<ShipmentDto> create(
+            @Valid @RequestBody CreateShipmentDto dto,
+            @CurrentUser Integer userId
+    ) {
+        return new ResponseEntity<>(shipmentService.createComplexShipment(dto, userId), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Оновити існуюче відправлення")

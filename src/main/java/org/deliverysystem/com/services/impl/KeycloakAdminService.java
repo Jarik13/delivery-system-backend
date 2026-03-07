@@ -96,7 +96,7 @@ public class KeycloakAdminService {
 
                     if (!roleName.equals("NONE")) {
                         Role role = Role.valueOf(roleName);
-                        var dbData = strategyRegistry.getStrategy(role).findByKeycloakId(u.getId());
+                        var dbData = strategyRegistry.getStrategy(role).findByKeycloakId(u.getId()).orElse(null);
                         if (dbData != null) {
                             middleName = dbData.middleName();
                             phoneNumber = dbData.phoneNumber();

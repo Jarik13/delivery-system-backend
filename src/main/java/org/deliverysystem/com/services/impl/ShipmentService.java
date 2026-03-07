@@ -48,6 +48,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     private final AddressHouseRepository addressHouseRepository;
     private final AddressRepository addressRepository;
     private final WaybillRouteStatusRepository waybillRouteStatusRepository;
+    private final EmployeeRepository employeeRepository;
 
     public ShipmentService(ShipmentRepository repo, ShipmentMapper mapper,
                            ParcelRepository parcelRepository, ClientRepository clientRepository,
@@ -56,7 +57,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                            PaymentRepository paymentRepository, ParcelTypeRepository parcelTypeRepository, ShipmentBoxRepository shipmentBoxRepository,
                            ShipmentOriginDeliveryPointRepository originDeliveryPointRepository, ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository, ShipmentOriginAddressRepository originAddressRepository,
                            ShipmentDestinationAddressRepository destinationAddressRepository, RouteRepository routeRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
-                           WaybillRouteStatusRepository waybillRouteStatusRepository) {
+                           WaybillRouteStatusRepository waybillRouteStatusRepository, EmployeeRepository employeeRepository) {
         super(mapper, repo);
         this.shipmentRepository = repo;
         this.parcelRepository = parcelRepository;
@@ -81,6 +82,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         this.addressRepository = addressRepository;
 
         this.waybillRouteStatusRepository = waybillRouteStatusRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     public CalculatedPriceResponseDto calculatePrices(ShipmentPriceCalculationRequestDto req) {
@@ -120,7 +122,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
 
     @Transactional
     @CacheEvict(value = {"shipmentPages", "shipmentStatistics"}, allEntries = true)
-    public ShipmentDto createComplexShipment(CreateShipmentDto dto) {
+    public ShipmentDto createComplexShipment(CreateShipmentDto dto, Integer userId) {
         Parcel parcel = new Parcel();
         parcel.setActualWeight(dto.actualWeight());
         parcel.setDeclaredValue(dto.declaredValue());
@@ -158,6 +160,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         shipment.setSenderPay(dto.isSenderPay());
         shipment.setPartiallyPaid(dto.isPartiallyPaid());
         shipment.setCreatedAt(LocalDateTime.now());
+        shipment.setCreatedBy(employeeRepository.getReferenceById(userId));
 
         Shipment saved = shipmentRepository.save(shipment);
 

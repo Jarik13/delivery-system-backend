@@ -10,6 +10,8 @@ import org.deliverysystem.com.repositories.BranchRepository;
 import org.deliverysystem.com.repositories.EmployeeRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class EmployeePersistenceStrategy implements UserPersistenceStrategy {
@@ -40,9 +42,8 @@ public class EmployeePersistenceStrategy implements UserPersistenceStrategy {
     }
 
     @Override
-    public UserDbDataDto findByKeycloakId(String keycloakId) {
+    public Optional<UserDbDataDto> findByKeycloakId(String keycloakId) {
         return employeeRepository.findByKeycloakId(keycloakId)
-                .map(e -> new UserDbDataDto(e.getMiddleName(), e.getPhoneNumber()))
-                .orElse(null);
+                .map(e -> new UserDbDataDto(e.getId(), e.getMiddleName(), e.getPhoneNumber()));
     }
 }

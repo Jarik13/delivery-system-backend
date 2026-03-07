@@ -8,6 +8,8 @@ import org.deliverysystem.com.enums.Role;
 import org.deliverysystem.com.repositories.CourierRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class CourierPersistenceStrategy implements UserPersistenceStrategy {
@@ -35,9 +37,8 @@ public class CourierPersistenceStrategy implements UserPersistenceStrategy {
     }
 
     @Override
-    public UserDbDataDto findByKeycloakId(String keycloakId) {
+    public Optional<UserDbDataDto> findByKeycloakId(String keycloakId) {
         return courierRepository.findByKeycloakId(keycloakId)
-                .map(c -> new UserDbDataDto(c.getMiddleName(), c.getPhoneNumber()))
-                .orElse(null);
+                .map(c -> new UserDbDataDto(c.getId(), c.getMiddleName(), c.getPhoneNumber()));
     }
 }

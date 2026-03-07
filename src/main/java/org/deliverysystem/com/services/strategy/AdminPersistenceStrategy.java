@@ -8,6 +8,8 @@ import org.deliverysystem.com.enums.Role;
 import org.deliverysystem.com.repositories.AdminRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class AdminPersistenceStrategy implements UserPersistenceStrategy {
@@ -35,9 +37,8 @@ public class AdminPersistenceStrategy implements UserPersistenceStrategy {
     }
 
     @Override
-    public UserDbDataDto findByKeycloakId(String keycloakId) {
+    public Optional<UserDbDataDto> findByKeycloakId(String keycloakId) {
         return adminRepository.findByKeycloakId(keycloakId)
-                .map(a -> new UserDbDataDto(a.getMiddleName(), a.getPhoneNumber()))
-                .orElse(null);
+                .map(a -> new UserDbDataDto(a.getId(), a.getMiddleName(), a.getPhoneNumber()));
     }
 }
