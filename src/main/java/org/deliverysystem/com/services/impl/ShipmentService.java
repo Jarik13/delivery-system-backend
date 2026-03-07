@@ -1,7 +1,9 @@
 package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
@@ -24,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, Integer> {
     private final ShipmentRepository shipmentRepository;
@@ -185,54 +188,6 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         return mapper.toDto(saved);
     }
 
-    private void saveBridgeLocations(Shipment s, RouteLocationDto origin, RouteLocationDto dest) {
-        if ("ADDRESS".equalsIgnoreCase(origin.type())) {
-            Address address = getOrCreateAddress(origin.streetId(), origin.houseNumber(), origin.apartmentNumber());
-
-            ShipmentOriginAddress soa = new ShipmentOriginAddress();
-            soa.setShipment(s);
-            soa.setAddress(address);
-            originAddressRepository.save(soa);
-        } else {
-            ShipmentOriginDeliveryPoint op = new ShipmentOriginDeliveryPoint();
-            op.setShipment(s);
-            op.setDeliveryPoint(deliveryPointRepository.getReferenceById(origin.deliveryPointId()));
-            originDeliveryPointRepository.save(op);
-        }
-
-        if ("ADDRESS".equalsIgnoreCase(dest.type())) {
-            Address address = getOrCreateAddress(dest.streetId(), dest.houseNumber(), dest.apartmentNumber());
-
-            ShipmentDestinationAddress sda = new ShipmentDestinationAddress();
-            sda.setShipment(s);
-            sda.setAddress(address);
-            destinationAddressRepository.save(sda);
-        } else {
-            ShipmentDestinationDeliveryPoint dp = new ShipmentDestinationDeliveryPoint();
-            dp.setShipment(s);
-            dp.setDeliveryPoint(deliveryPointRepository.getReferenceById(dest.deliveryPointId()));
-            destinationDeliveryPointRepository.save(dp);
-        }
-    }
-
-    private Address getOrCreateAddress(Integer streetId, String houseNumber, Integer apartmentNumber) {
-        AddressHouse house = addressHouseRepository.findByStreetIdAndNumber(streetId, houseNumber)
-                .orElseGet(() -> {
-                    AddressHouse newHouse = new AddressHouse();
-                    newHouse.setStreet(streetRepository.getReferenceById(streetId));
-                    newHouse.setNumber(houseNumber);
-                    return addressHouseRepository.save(newHouse);
-                });
-
-        return addressRepository.findByHouseIdAndApartmentNumber(house.getId(), apartmentNumber)
-                .orElseGet(() -> {
-                    Address newAddr = new Address();
-                    newAddr.setHouse(house);
-                    newAddr.setApartmentNumber(apartmentNumber);
-                    return addressRepository.save(newAddr);
-                });
-    }
-
     @Override
     @CacheEvict(value = {"shipmentPages", "shipmentStatistics", "shipmentMovements"}, allEntries = true)
     public ShipmentDto update(Integer id, ShipmentDto dto) {
@@ -240,35 +195,39 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "shipmentPages", key = "{#criteria, #pageable}", condition = "#pageable.pageNumber < 5")
-    public RestPage<ShipmentDto> findAll(ShipmentSearchCriteria criteria, Pageable pageable) {
-        if (criteria == null) {
-            Page<ShipmentDto> result = shipmentRepository.findAll(pageable).map(mapper::toDto);
-            return new RestPage<>(result);
-        }
+    @Cacheable(value = "shipmentPages", key = "{#criteria, #pageable, #userId}", condition = "#pageable.pageNumber < 5")
+    public RestPage<ShipmentDto> findAll(ShipmentSearchCriteria criteria, Pageable pageable, Integer userId) {
+        Integer branchId = employeeRepository.findById(userId)
+                .map(e -> e.getBranch().getId())
+                .orElse(null);
 
-        Specification<Shipment> spec = Specification.where(SpecificationUtils.<Shipment>iLike("trackingNumber", criteria.trackingNumber()))
-                .and(SpecificationUtils.in("shipmentStatus.id", criteria.shipmentStatuses()))
-                .and(SpecificationUtils.in("shipmentType.id", criteria.shipmentTypes()))
-                .and(SpecificationUtils.iLike("parcel.contentDescription", criteria.parcelDescription()))
-                .and(SpecificationUtils.gte("createdAt", criteria.createdAtFrom()))
-                .and(SpecificationUtils.lte("createdAt", criteria.createdAtTo()))
-                .and(SpecificationUtils.gte("issuedAt", criteria.issuedAtFrom()))
-                .and(SpecificationUtils.lte("issuedAt", criteria.issuedAtTo()))
-                .and(SpecificationUtils.gte("parcel.actualWeight", criteria.weightMin()))
-                .and(SpecificationUtils.lte("parcel.actualWeight", criteria.weightMax()))
-                .and(SpecificationUtils.gte("price.total", criteria.totalPriceMin()))
-                .and(SpecificationUtils.lte("price.total", criteria.totalPriceMax()))
-                .and(SpecificationUtils.gte("price.delivery", criteria.deliveryPriceMin()))
-                .and(SpecificationUtils.lte("price.delivery", criteria.deliveryPriceMax()))
-                .and(SpecificationUtils.gte("price.weight", criteria.weightPriceMin()))
-                .and(SpecificationUtils.lte("price.weight", criteria.weightPriceMax()))
-                .and(SpecificationUtils.gte("price.boxVariant", criteria.boxVariantPriceMin()))
-                .and(SpecificationUtils.lte("price.boxVariant", criteria.boxVariantPriceMax()))
-                .and(SpecificationUtils.gte("price.specialPackaging", criteria.specialPackagingPriceMin()))
-                .and(SpecificationUtils.lte("price.specialPackaging", criteria.specialPackagingPriceMax()))
-                .and(SpecificationUtils.gte("price.insuranceFee", criteria.insuranceFeeMin()))
-                .and(SpecificationUtils.lte("price.insuranceFee", criteria.insuranceFeeMax()));
+        Specification<Shipment> spec = Specification.where(byBranch(branchId, userId));
+
+        if (criteria != null) {
+            spec = spec
+                    .and(SpecificationUtils.<Shipment>iLike("trackingNumber", criteria.trackingNumber()))
+                    .and(SpecificationUtils.in("shipmentStatus.id", criteria.shipmentStatuses()))
+                    .and(SpecificationUtils.in("shipmentType.id", criteria.shipmentTypes()))
+                    .and(SpecificationUtils.iLike("parcel.contentDescription", criteria.parcelDescription()))
+                    .and(SpecificationUtils.gte("createdAt", criteria.createdAtFrom()))
+                    .and(SpecificationUtils.lte("createdAt", criteria.createdAtTo()))
+                    .and(SpecificationUtils.gte("issuedAt", criteria.issuedAtFrom()))
+                    .and(SpecificationUtils.lte("issuedAt", criteria.issuedAtTo()))
+                    .and(SpecificationUtils.gte("parcel.actualWeight", criteria.weightMin()))
+                    .and(SpecificationUtils.lte("parcel.actualWeight", criteria.weightMax()))
+                    .and(SpecificationUtils.gte("price.total", criteria.totalPriceMin()))
+                    .and(SpecificationUtils.lte("price.total", criteria.totalPriceMax()))
+                    .and(SpecificationUtils.gte("price.delivery", criteria.deliveryPriceMin()))
+                    .and(SpecificationUtils.lte("price.delivery", criteria.deliveryPriceMax()))
+                    .and(SpecificationUtils.gte("price.weight", criteria.weightPriceMin()))
+                    .and(SpecificationUtils.lte("price.weight", criteria.weightPriceMax()))
+                    .and(SpecificationUtils.gte("price.boxVariant", criteria.boxVariantPriceMin()))
+                    .and(SpecificationUtils.lte("price.boxVariant", criteria.boxVariantPriceMax()))
+                    .and(SpecificationUtils.gte("price.specialPackaging", criteria.specialPackagingPriceMin()))
+                    .and(SpecificationUtils.lte("price.specialPackaging", criteria.specialPackagingPriceMax()))
+                    .and(SpecificationUtils.gte("price.insuranceFee", criteria.insuranceFeeMin()))
+                    .and(SpecificationUtils.lte("price.insuranceFee", criteria.insuranceFeeMax()));
+        }
 
         Page<ShipmentDto> result = shipmentRepository.findAll(spec, pageable).map(mapper::toDto);
         return new RestPage<>(result);
@@ -450,7 +409,79 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                 .toList();
     }
 
+
+    private void saveBridgeLocations(Shipment s, RouteLocationDto origin, RouteLocationDto dest) {
+        if ("ADDRESS".equalsIgnoreCase(origin.type())) {
+            Address address = getOrCreateAddress(origin.streetId(), origin.houseNumber(), origin.apartmentNumber());
+
+            ShipmentOriginAddress soa = new ShipmentOriginAddress();
+            soa.setShipment(s);
+            soa.setAddress(address);
+            originAddressRepository.save(soa);
+        } else {
+            ShipmentOriginDeliveryPoint op = new ShipmentOriginDeliveryPoint();
+            op.setShipment(s);
+            op.setDeliveryPoint(deliveryPointRepository.getReferenceById(origin.deliveryPointId()));
+            originDeliveryPointRepository.save(op);
+        }
+
+        if ("ADDRESS".equalsIgnoreCase(dest.type())) {
+            Address address = getOrCreateAddress(dest.streetId(), dest.houseNumber(), dest.apartmentNumber());
+
+            ShipmentDestinationAddress sda = new ShipmentDestinationAddress();
+            sda.setShipment(s);
+            sda.setAddress(address);
+            destinationAddressRepository.save(sda);
+        } else {
+            ShipmentDestinationDeliveryPoint dp = new ShipmentDestinationDeliveryPoint();
+            dp.setShipment(s);
+            dp.setDeliveryPoint(deliveryPointRepository.getReferenceById(dest.deliveryPointId()));
+            destinationDeliveryPointRepository.save(dp);
+        }
+    }
+
+    private Address getOrCreateAddress(Integer streetId, String houseNumber, Integer apartmentNumber) {
+        AddressHouse house = addressHouseRepository.findByStreetIdAndNumber(streetId, houseNumber)
+                .orElseGet(() -> {
+                    AddressHouse newHouse = new AddressHouse();
+                    newHouse.setStreet(streetRepository.getReferenceById(streetId));
+                    newHouse.setNumber(houseNumber);
+                    return addressHouseRepository.save(newHouse);
+                });
+
+        return addressRepository.findByHouseIdAndApartmentNumber(house.getId(), apartmentNumber)
+                .orElseGet(() -> {
+                    Address newAddr = new Address();
+                    newAddr.setHouse(house);
+                    newAddr.setApartmentNumber(apartmentNumber);
+                    return addressRepository.save(newAddr);
+                });
+    }
+
     private BigDecimal defaultIfNull(BigDecimal value, BigDecimal defaultValue) {
         return value != null ? value : defaultValue;
+    }
+
+    private Specification<Shipment> byBranch(Integer branchId, Integer userId) {
+        if (branchId == null && userId == null) return null;
+        return (root, query, cb) -> {
+            query.distinct(true);
+
+            var originSubquery = query.subquery(Integer.class);
+            var originRoot = originSubquery.from(ShipmentOriginDeliveryPoint.class);
+            originSubquery.select(originRoot.get("shipment").get("id"))
+                    .where(cb.equal(originRoot.get("deliveryPoint").get("branch").get("id"), branchId));
+
+            var destSubquery = query.subquery(Integer.class);
+            var destRoot = destSubquery.from(ShipmentDestinationDeliveryPoint.class);
+            destSubquery.select(destRoot.get("shipment").get("id"))
+                    .where(cb.equal(destRoot.get("deliveryPoint").get("branch").get("id"), branchId));
+
+            return cb.or(
+                    root.get("id").in(originSubquery),
+                    root.get("id").in(destSubquery),
+                    cb.equal(root.get("createdBy").get("id"), userId)
+            );
+        };
     }
 }

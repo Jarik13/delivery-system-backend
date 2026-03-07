@@ -48,6 +48,8 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+    config-url: /api-docs/swagger-config
+    url: /api-docs
     operations-sorter: method
 
 keycloak:

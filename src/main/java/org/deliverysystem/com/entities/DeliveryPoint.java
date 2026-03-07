@@ -25,6 +25,12 @@ public class DeliveryPoint {
     @Column(name = "delivery_point_address")
     private String address;
 
+    @OneToOne(mappedBy = "deliveryPoint")
+    private Branch branch;
+
+    @OneToOne(mappedBy = "deliveryPoint")
+    private Postomat postomat;
+
     @ManyToOne
     @JoinColumn(name = "city_id")
     private City city;

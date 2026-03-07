@@ -19,7 +19,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
-
     private final UserPersistenceStrategyRegistry strategyRegistry;
 
     @Override

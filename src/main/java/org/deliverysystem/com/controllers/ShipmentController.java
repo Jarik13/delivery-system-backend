@@ -28,9 +28,10 @@ public class ShipmentController {
     @GetMapping
     public ResponseEntity<RestPage<ShipmentDto>> getAll(
             @ParameterObject ShipmentSearchCriteria criteria,
-            @ParameterObject Pageable pageable
+            @ParameterObject Pageable pageable,
+            @CurrentUser Integer userId
     ) {
-        return ResponseEntity.ok(shipmentService.findAll(criteria, pageable));
+        return ResponseEntity.ok(shipmentService.findAll(criteria, pageable, userId));
     }
 
     @Operation(summary = "Отримати статистику по відправленням (мін/макс значення)")
