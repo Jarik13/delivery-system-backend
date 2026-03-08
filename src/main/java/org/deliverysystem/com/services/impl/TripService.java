@@ -145,7 +145,8 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
 
     @Transactional(readOnly = true)
     public List<TripSegmentDto> getSegments(Integer tripId) {
-        Trip trip = repository.findById(tripId).orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено: " + tripId));
+        Trip trip = repository.findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено: " + tripId));
 
         if (trip.getWaybillRoutes() == null) return List.of();
 
@@ -153,39 +154,40 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                 .sorted(Comparator.comparing(wr -> wr.getSequenceNumber() != null ? wr.getSequenceNumber() : 0))
                 .map(wr -> {
                     Route route = wr.getRoute();
-                    String originCity = null;
-                    String destCity = null;
+                    String originCityName = null, destCityName = null;
                     Double distance = null;
+                    Double originLat = null, originLng = null;
+                    Double destLat = null, destLng = null;
 
                     try {
-                        originCity = route.getOriginBranch().getDeliveryPoint().getCity().getName();
-                    } catch (Exception ignored) {
-                    }
+                        var city = route.getOriginBranch().getDeliveryPoint().getCity();
+                        originCityName = city.getName();
+                        originLat = city.getLatitude();
+                        originLng = city.getLongitude();
+                    } catch (Exception ignored) {}
 
                     try {
-                        destCity = route.getDestinationBranch().getDeliveryPoint().getCity().getName();
-                    } catch (Exception ignored) {
-                    }
+                        var city = route.getDestinationBranch().getDeliveryPoint().getCity();
+                        destCityName = city.getName();
+                        destLat = city.getLatitude();
+                        destLng = city.getLongitude();
+                    } catch (Exception ignored) {}
 
                     try {
-                        distance = Double.valueOf(route.getDistanceKm() != null ? route.getDistanceKm() : null);
-                    } catch (Exception ignored) {
-                    }
+                        if (route.getDistanceKm() != null)
+                            distance = Double.valueOf(route.getDistanceKm());
+                    } catch (Exception ignored) {}
 
-                    boolean hasWaybill = waybillRouteRepository.existsByTripIdAndRouteIdAndWaybillIsNotNull(tripId, route.getId());
-
+                    boolean hasWaybill = waybillRouteRepository
+                            .existsByTripIdAndRouteIdAndWaybillIsNotNull(tripId, route.getId());
                     Integer waybillId = waybillRouteRepository
                             .findWaybillIdByTripIdAndRouteId(tripId, route.getId())
                             .orElse(null);
 
                     return new TripSegmentDto(
-                            route.getId(),
-                            waybillId,
-                            wr.getSequenceNumber(),
-                            originCity,
-                            destCity,
-                            distance,
-                            hasWaybill
+                            route.getId(), waybillId, wr.getSequenceNumber(),
+                            originCityName, destCityName, distance, hasWaybill,
+                            originLat, originLng, destLat, destLng
                     );
                 })
                 .toList();

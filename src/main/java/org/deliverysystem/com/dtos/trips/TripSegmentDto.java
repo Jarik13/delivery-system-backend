@@ -7,5 +7,9 @@ public record TripSegmentDto(
         String originCity,
         String destCity,
         Double distance,
-        boolean hasWaybill
+        boolean hasWaybill,
+        Double originLat,
+        Double originLng,
+        Double destLat,
+        Double destLng
 ) {}
