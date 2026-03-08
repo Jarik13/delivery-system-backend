@@ -36,6 +36,6 @@ public class DriverPersistenceStrategy implements UserPersistenceStrategy {
     @Override
     public Optional<UserDbDataDto> findByKeycloakId(String keycloakId) {
         return driverRepository.findByKeycloakId(keycloakId)
-                .map(d -> new UserDbDataDto(d.getId(), d.getMiddleName(), d.getPhoneNumber()));
+                .map(d -> UserDbDataDto.of(d.getId(), d.getMiddleName(), d.getPhoneNumber()));
     }
 }

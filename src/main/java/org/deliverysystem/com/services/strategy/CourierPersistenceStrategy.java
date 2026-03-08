@@ -39,6 +39,6 @@ public class CourierPersistenceStrategy implements UserPersistenceStrategy {
     @Override
     public Optional<UserDbDataDto> findByKeycloakId(String keycloakId) {
         return courierRepository.findByKeycloakId(keycloakId)
-                .map(c -> new UserDbDataDto(c.getId(), c.getMiddleName(), c.getPhoneNumber()));
+                .map(c -> UserDbDataDto.of(c.getId(), c.getMiddleName(), c.getPhoneNumber()));
     }
 }

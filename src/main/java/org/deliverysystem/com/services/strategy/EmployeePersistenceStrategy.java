@@ -8,13 +8,14 @@ import org.deliverysystem.com.entities.Employee;
 import org.deliverysystem.com.enums.Role;
 import org.deliverysystem.com.repositories.BranchRepository;
 import org.deliverysystem.com.repositories.EmployeeRepository;
+import org.deliverysystem.com.services.BranchAssignable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class EmployeePersistenceStrategy implements UserPersistenceStrategy {
+public class EmployeePersistenceStrategy implements UserPersistenceStrategy, BranchAssignable {
     private final BranchRepository branchRepository;
     private final EmployeeRepository employeeRepository;
 
@@ -44,6 +45,20 @@ public class EmployeePersistenceStrategy implements UserPersistenceStrategy {
     @Override
     public Optional<UserDbDataDto> findByKeycloakId(String keycloakId) {
         return employeeRepository.findByKeycloakId(keycloakId)
-                .map(e -> new UserDbDataDto(e.getId(), e.getMiddleName(), e.getPhoneNumber()));
+                .map(e -> UserDbDataDto.ofEmployee(
+                        e.getId(),
+                        e.getMiddleName(),
+                        e.getPhoneNumber(),
+                        e.getBranch() != null ? e.getBranch().getId() : null
+                ));
+    }
+
+    @Override
+    public void updateBranch(String keycloakId, Integer branchId) {
+        employeeRepository.findByKeycloakId(keycloakId)
+                .ifPresent(employee -> {
+                    employee.setBranch(branchRepository.getReferenceById(branchId));
+                    employeeRepository.save(employee);
+                });
     }
 }

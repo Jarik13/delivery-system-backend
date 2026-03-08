@@ -10,5 +10,6 @@ public interface UserService {
     void deleteUser(String keycloakId);
     void resendEmail(String keycloakId);
     void updateRole(String keycloakId, String newRole);
+    void updateBranch(String keycloakId, Integer branchId);
     List<UserDto> getAllUsers();
 }

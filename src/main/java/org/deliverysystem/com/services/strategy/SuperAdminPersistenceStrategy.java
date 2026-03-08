@@ -39,6 +39,6 @@ public class SuperAdminPersistenceStrategy implements UserPersistenceStrategy {
     @Override
     public Optional<UserDbDataDto> findByKeycloakId(String keycloakId) {
         return superAdminRepository.findByKeycloakId(keycloakId)
-                .map(sp -> new UserDbDataDto(sp.getId(), sp.getMiddleName(), sp.getPhoneNumber()));
+                .map(sp -> UserDbDataDto.of(sp.getId(), sp.getMiddleName(), sp.getPhoneNumber()));
     }
 }

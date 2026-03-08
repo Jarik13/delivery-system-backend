@@ -26,5 +26,8 @@ public record UserDto(
         String role,
 
         @Schema(description = "Email підтверджено", example = "false")
-        boolean emailVerified
+        boolean emailVerified,
+
+        @Schema(description = "ID відділення (тільки для EMPLOYEE)", example = "236")
+        Integer branchId
 ) {}

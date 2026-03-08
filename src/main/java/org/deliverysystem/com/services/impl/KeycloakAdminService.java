@@ -93,6 +93,7 @@ public class KeycloakAdminService {
 
                     String middleName = null;
                     String phoneNumber = null;
+                    Integer branchId = null;
 
                     if (!roleName.equals("NONE")) {
                         Role role = Role.valueOf(roleName);
@@ -100,6 +101,7 @@ public class KeycloakAdminService {
                         if (dbData != null) {
                             middleName = dbData.middleName();
                             phoneNumber = dbData.phoneNumber();
+                            branchId = dbData.branchId();
                         }
                     }
 
@@ -111,7 +113,8 @@ public class KeycloakAdminService {
                             middleName,
                             phoneNumber,
                             roleName,
-                            Boolean.TRUE.equals(u.isEmailVerified())
+                            Boolean.TRUE.equals(u.isEmailVerified()),
+                            branchId
                     );
                 })
                 .toList();

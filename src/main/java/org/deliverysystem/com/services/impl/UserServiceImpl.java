@@ -6,7 +6,9 @@ import org.deliverysystem.com.annotations.Auditable;
 import org.deliverysystem.com.dtos.users.CreateUserDto;
 import org.deliverysystem.com.dtos.users.UserDto;
 import org.deliverysystem.com.enums.Role;
+import org.deliverysystem.com.services.BranchAssignable;
 import org.deliverysystem.com.services.UserService;
+import org.deliverysystem.com.services.strategy.UserPersistenceStrategy;
 import org.deliverysystem.com.services.strategy.UserPersistenceStrategyRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +36,7 @@ public class UserServiceImpl implements UserService {
                 keycloakId, dto.email(),
                 dto.firstName(), dto.lastName(),
                 dto.middleName(), dto.phoneNumber(),
-                dto.role().name(), false
+                dto.role().name(), false, dto.branchId()
         );
     }
 
@@ -62,6 +64,20 @@ public class UserServiceImpl implements UserService {
     public void updateRole(String keycloakId, String newRole) {
         keycloakAdminService.updateUserRole(keycloakId, Role.valueOf(newRole));
         log.info("Role updated: keycloakId={}, role={}", keycloakId, newRole);
+    }
+
+    @Override
+    @Auditable(action = "UPDATE_BRANCH")
+    @Transactional
+    public void updateBranch(String keycloakId, Integer branchId) {
+        UserPersistenceStrategy strategy = strategyRegistry.getStrategy(Role.EMPLOYEE);
+
+        if (!(strategy instanceof BranchAssignable branchAssignable)) {
+            throw new UnsupportedOperationException("EMPLOYEE strategy does not support branch assignment");
+        }
+
+        branchAssignable.updateBranch(keycloakId, branchId);
+        log.info("Branch updated: keycloakId={}, branchId={}", keycloakId, branchId);
     }
 
     @Override

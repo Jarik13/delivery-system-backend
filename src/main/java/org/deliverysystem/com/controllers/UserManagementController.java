@@ -75,4 +75,13 @@ public class UserManagementController {
         userService.updateRole(keycloakId, body.get("role"));
         return ResponseEntity.ok(Map.of("message", "Роль оновлено"));
     }
+
+    @Operation(summary = "Змінити відділення працівника")
+    @PatchMapping("/{keycloakId}/branch")
+    public ResponseEntity<Map<String, String>> updateBranch(
+            @Parameter(description = "Keycloak ID") @PathVariable String keycloakId,
+            @RequestBody Map<String, Integer> body) {
+        userService.updateBranch(keycloakId, body.get("branchId"));
+        return ResponseEntity.ok(Map.of("message", "Відділення оновлено"));
+    }
 }

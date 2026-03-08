@@ -39,6 +39,6 @@ public class AdminPersistenceStrategy implements UserPersistenceStrategy {
     @Override
     public Optional<UserDbDataDto> findByKeycloakId(String keycloakId) {
         return adminRepository.findByKeycloakId(keycloakId)
-                .map(a -> new UserDbDataDto(a.getId(), a.getMiddleName(), a.getPhoneNumber()));
+                .map(e -> UserDbDataDto.of(e.getId(), e.getMiddleName(), e.getPhoneNumber()));
     }
 }
