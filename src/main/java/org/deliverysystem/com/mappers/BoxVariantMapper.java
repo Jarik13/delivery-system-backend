@@ -7,9 +7,10 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface BoxVariantMapper extends GenericMapper<BoxVariant, BoxVariantDto> {
-    @Override
     @Mapping(source = "boxType.id", target = "boxTypeId")
     @Mapping(source = "boxType.name", target = "boxTypeName")
+    @Mapping(source = "weightCategory.maxWeight", target = "maxWeight")
+    @Mapping(source = "weightCategory.name", target = "weightCategoryName")
     BoxVariantDto toDto(BoxVariant entity);
 
     @Override

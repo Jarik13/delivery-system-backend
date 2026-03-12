@@ -34,4 +34,8 @@ public class DeliveryPoint {
     @ManyToOne
     @JoinColumn(name = "city_id")
     private City city;
+
+    @ManyToOne
+    @JoinColumn(name = "weight_category_id")
+    private WeightCategory weightCategory;
 }
