@@ -38,6 +38,9 @@ public class RouteList {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "planned_departure_time")
+    private LocalDateTime plannedDepartureTime;
+
     @OneToMany(mappedBy = "routeList", cascade = CascadeType.ALL)
     private List<RouteSheetItem> routeSheetItems = new ArrayList<>();
 
