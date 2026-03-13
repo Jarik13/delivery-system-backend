@@ -9,11 +9,17 @@ public record RouteSearchCriteria(
         @Schema(description = "Назва відділення відправлення (пошук)", example = "Львів")
         String originBranchName,
 
+        @Schema(description = "Назва міста відправлення (пошук)", example = "Київ")
+        String originCityName,
+
         @Schema(description = "ID відділення призначення")
         Integer destinationBranchId,
 
         @Schema(description = "Назва відділення призначення (пошук)", example = "Київ")
         String destinationBranchName,
+
+        @Schema(description = "Назва міста призначення (пошук)", example = "Львів")
+        String destinationCityName,
 
         @Schema(description = "Мінімальна відстань між відділенями")
         Float distanceKmMin,

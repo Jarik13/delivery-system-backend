@@ -25,6 +25,12 @@ public record RouteDto(
         @Schema(description = "Назва міста призначення", example = "Львів", accessMode = Schema.AccessMode.READ_ONLY)
         String destinationCityName,
 
+        @Schema(description = "ID міста відправлення", example = "12", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer originCityId,
+
+        @Schema(description = "ID міста призначення", example = "34", accessMode = Schema.AccessMode.READ_ONLY)
+        Integer destinationCityId,
+
         @Schema(description = "Чи потрібне сортування на маршруті", example = "false")
         Boolean needSorting,
 

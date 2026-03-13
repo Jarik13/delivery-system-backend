@@ -57,6 +57,8 @@ public class RouteService extends AbstractBaseService<Route, RouteDto, Integer> 
                 .and(SpecificationUtils.equal("destinationBranch.id", criteria.destinationBranchId()))
                 .and(SpecificationUtils.iLike("originBranch.deliveryPoint.name", criteria.originBranchName()))
                 .and(SpecificationUtils.iLike("destinationBranch.deliveryPoint.name", criteria.destinationBranchName()))
+                .and(SpecificationUtils.iLike("originBranch.deliveryPoint.city.name", criteria.originCityName()))
+                .and(SpecificationUtils.iLike("destinationBranch.deliveryPoint.city.name", criteria.destinationCityName()))
                 .and(SpecificationUtils.gte("distanceKm", criteria.distanceKmMin()))
                 .and(SpecificationUtils.lte("distanceKm", criteria.distanceKmMax()))
                 .and(SpecificationUtils.equal("needSorting", criteria.needSorting()));
