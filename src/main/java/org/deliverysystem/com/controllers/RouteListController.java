@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
 import org.deliverysystem.com.dtos.search.RouteListSearchCriteria;
@@ -44,8 +45,8 @@ public class RouteListController {
 
     @PostMapping
     @Operation(summary = "Створити новий маршрутний лист")
-    public ResponseEntity<RouteListDto> create(@Valid @RequestBody RouteListDto dto) {
-        return new ResponseEntity<>(routeListService.create(dto), HttpStatus.CREATED);
+    public ResponseEntity<RouteListDto> create(@Valid @RequestBody CreateRouteListDto dto) {
+        return new ResponseEntity<>(routeListService.createRouteList(dto), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
