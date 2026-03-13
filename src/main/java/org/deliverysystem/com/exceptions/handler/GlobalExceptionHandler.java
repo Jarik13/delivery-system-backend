@@ -1,6 +1,7 @@
 package org.deliverysystem.com.exceptions.handler;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.deliverysystem.com.exceptions.exceptions.BusinessValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -49,6 +50,18 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 ex.getMessage()
+        );
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(BusinessValidationException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessValidation(BusinessValidationException ex) {
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Validation Failed",
+                "Помилка валідації даних",
+                ex.getValidationErrors()
         );
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
