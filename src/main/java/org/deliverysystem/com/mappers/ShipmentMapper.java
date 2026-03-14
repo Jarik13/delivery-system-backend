@@ -1,5 +1,6 @@
 package org.deliverysystem.com.mappers;
 
+import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
 import org.deliverysystem.com.dtos.shipments.ShipmentDto;
 import org.deliverysystem.com.entities.*;
 import org.mapstruct.Mapper;
@@ -78,6 +79,39 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(target = "returns", ignore = true)
     Shipment toEntity(ShipmentDto dto);
 
+    @Named("toRouteListDto")
+    default RouteListShipmentDto toRouteListDto(Shipment shipment) {
+        String recipient = toFullName(shipment.getRecipient());
+
+        String address = null;
+        if (shipment.getDestinationDeliveryPoint() != null
+            && shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null) {
+            var dp = shipment.getDestinationDeliveryPoint().getDeliveryPoint();
+            String city = dp.getCity() != null ? dp.getCity().getName() : "";
+            address = city.isBlank() ? dp.getName() : city + ", " + dp.getName();
+        } else if (shipment.getDestinationAddress() != null
+                   && shipment.getDestinationAddress().getAddress() != null) {
+            String city = resolveDestinationCity(shipment);
+            String addr = formatAddress(shipment.getDestinationAddress().getAddress());
+            address = city.isBlank() ? addr : city + ", " + addr;
+        }
+
+        BigDecimal weight = shipment.getParcel() != null
+                ? shipment.getParcel().getActualWeight() : null;
+
+        boolean isExpress = shipment.getShipmentType() != null
+                            && shipment.getShipmentType().getName().toLowerCase().contains("експрес");
+
+        return new RouteListShipmentDto(
+                shipment.getId(),
+                shipment.getTrackingNumber(),
+                recipient,
+                address,
+                weight,
+                isExpress
+        );
+    }
+
     @Named("resolveWaybillId")
     default Integer resolveWaybillId(Shipment shipment) {
         try {
@@ -146,7 +180,7 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
             if (bv == null) return null;
             return String.format("%sx%sx%s см",
                     bv.getLength() != null ? bv.getLength().stripTrailingZeros().toPlainString() : "?",
-                    bv.getWidth()  != null ? bv.getWidth().stripTrailingZeros().toPlainString()  : "?",
+                    bv.getWidth() != null ? bv.getWidth().stripTrailingZeros().toPlainString() : "?",
                     bv.getHeight() != null ? bv.getHeight().stripTrailingZeros().toPlainString() : "?"
             );
         } catch (Exception e) {
@@ -183,7 +217,7 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
 
     @Named("calculateRemaining")
     default BigDecimal calculateRemaining(Shipment entity) {
-        BigDecimal totalPaid  = calculateTotalPaid(entity);
+        BigDecimal totalPaid = calculateTotalPaid(entity);
         BigDecimal totalPrice = (entity.getPrice() != null && entity.getPrice().getTotal() != null)
                 ? entity.getPrice().getTotal() : BigDecimal.ZERO;
         return totalPrice.subtract(totalPaid);
@@ -191,7 +225,7 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
 
     @Named("calculateIsFullyPaid")
     default Boolean calculateIsFullyPaid(Shipment entity) {
-        BigDecimal totalPaid  = calculateTotalPaid(entity);
+        BigDecimal totalPaid = calculateTotalPaid(entity);
         BigDecimal totalPrice = (entity.getPrice() != null && entity.getPrice().getTotal() != null)
                 ? entity.getPrice().getTotal() : BigDecimal.ZERO;
         if (totalPrice.compareTo(BigDecimal.ZERO) == 0) return true;
@@ -256,9 +290,9 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
         if (addr == null || addr.getHouse() == null || addr.getHouse().getStreet() == null) {
             return "Адреса неповна";
         }
-        String  street   = addr.getHouse().getStreet().getName();
-        String  houseNum = addr.getHouse().getNumber();
-        Integer apt      = addr.getApartmentNumber();
+        String street = addr.getHouse().getStreet().getName();
+        String houseNum = addr.getHouse().getNumber();
+        Integer apt = addr.getApartmentNumber();
         StringBuilder sb = new StringBuilder()
                 .append(street).append(", буд. ").append(houseNum);
         if (apt != null && apt > 0) sb.append(", кв. ").append(apt);
@@ -269,8 +303,8 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     default String toFullName(BaseUser user) {
         if (user == null) return "Невідомо";
         StringBuilder sb = new StringBuilder();
-        if (user.getLastName()   != null) sb.append(user.getLastName()).append(" ");
-        if (user.getFirstName()  != null) sb.append(user.getFirstName()).append(" ");
+        if (user.getLastName() != null) sb.append(user.getLastName()).append(" ");
+        if (user.getFirstName() != null) sb.append(user.getFirstName()).append(" ");
         if (user.getMiddleName() != null) sb.append(user.getMiddleName());
         return sb.toString().trim();
     }

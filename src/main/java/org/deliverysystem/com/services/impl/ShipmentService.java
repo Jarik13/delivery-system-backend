@@ -5,6 +5,7 @@ import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.deliverysystem.com.constants.ErrorMessage;
+import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
 import org.deliverysystem.com.entities.*;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, Integer> {
+    private final ShipmentMapper shipmentMapper;
     private final ShipmentRepository shipmentRepository;
     private final ParcelRepository parcelRepository;
     private final ClientRepository clientRepository;
@@ -63,6 +65,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                            WaybillRouteStatusRepository waybillRouteStatusRepository, EmployeeRepository employeeRepository) {
         super(mapper, repo);
         this.shipmentRepository = repo;
+        this.shipmentMapper = mapper;
         this.parcelRepository = parcelRepository;
         this.clientRepository = clientRepository;
         this.statusRepository = statusRepository;
@@ -406,6 +409,13 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
 
         return suggested.stream()
                 .map(mapper::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RouteListShipmentDto> getAvailableForRouteList() {
+        return shipmentRepository.findAvailableForRouteList().stream()
+                .map(shipmentMapper::toRouteListDto)
                 .toList();
     }
 

@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.annotations.CurrentUser;
+import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
 import org.deliverysystem.com.services.impl.ShipmentService;
@@ -50,6 +51,12 @@ public class ShipmentController {
     @GetMapping(value = "/suggested", params = "routeId")
     public ResponseEntity<List<ShipmentDto>> getSuggested(@RequestParam Integer routeId) {
         return ResponseEntity.ok(shipmentService.getSuggestedShipments(routeId));
+    }
+
+    @Operation(summary = "Отримати відправлення доступні для додавання в маршрутний лист")
+    @GetMapping("/available-for-route-list")
+    public ResponseEntity<List<RouteListShipmentDto>> getAvailableForRouteList() {
+        return ResponseEntity.ok(shipmentService.getAvailableForRouteList());
     }
 
     @Operation(summary = "Отримати за ID")

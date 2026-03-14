@@ -66,7 +66,7 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
                         : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        if (totalWeight.compareTo(new BigDecimal("30.0")) > 0) {
+        if (totalWeight.compareTo(new BigDecimal("100.0")) > 0) {
             throw new BusinessValidationException("shipmentIds",
                     "Сумарна вага відправлень перевищує 30 кг (" +
                     totalWeight.setScale(2, RoundingMode.HALF_UP) + " кг)");
