@@ -4,6 +4,7 @@ import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
 import org.deliverysystem.com.dtos.search.RouteListSearchCriteria;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.exceptions.exceptions.BusinessValidationException;
 import org.deliverysystem.com.mappers.RouteListMapper;
@@ -98,10 +99,14 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "routeListPages", key = "{#criteria, #pageable, #userId}", condition = "#pageable.pageNumber < 10")
-    public RestPage<RouteListDto> findAll(RouteListSearchCriteria criteria, Pageable pageable, Integer userId) {
+    @Cacheable(value = "routeListPages", key = "{#criteria, #pageable, #user}", condition = "#pageable.pageNumber < 10")
+    public RestPage<RouteListDto> findAll(RouteListSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {
+        Specification<RouteList> accessSpec = "COURIER".equals(user.role())
+                ? SpecificationUtils.equal("courier.id", user.id())
+                : SpecificationUtils.equal("createdBy.id", user.id());
+
         Specification<RouteList> spec = Specification
-                .where(SpecificationUtils.<RouteList>equal("createdBy.id", userId))
+                .where(accessSpec)
                 .and(SpecificationUtils.equal("number", criteria != null ? criteria.number() : null))
                 .and(SpecificationUtils.equal("courier.id", criteria != null ? criteria.courierId() : null))
                 .and(SpecificationUtils.in("status.id", criteria != null ? criteria.statuses() : null))

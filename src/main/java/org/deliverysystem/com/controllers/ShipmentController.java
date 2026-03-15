@@ -8,6 +8,7 @@ import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.services.impl.ShipmentService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
@@ -30,9 +31,9 @@ public class ShipmentController {
     public ResponseEntity<RestPage<ShipmentDto>> getAll(
             @ParameterObject ShipmentSearchCriteria criteria,
             @ParameterObject Pageable pageable,
-            @CurrentUser Integer userId
+            @CurrentUser CurrentUserDto user
     ) {
-        return ResponseEntity.ok(shipmentService.findAll(criteria, pageable, userId));
+        return ResponseEntity.ok(shipmentService.findAll(criteria, pageable, user));
     }
 
     @Operation(summary = "Отримати статистику по відправленням (мін/макс значення)")

@@ -8,6 +8,7 @@ import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.mappers.ShipmentMapper;
 import org.deliverysystem.com.repositories.*;
@@ -199,12 +200,12 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
 
     @Transactional(readOnly = true)
     @Cacheable(value = "shipmentPages", key = "{#criteria, #pageable, #userId}", condition = "#pageable.pageNumber < 5")
-    public RestPage<ShipmentDto> findAll(ShipmentSearchCriteria criteria, Pageable pageable, Integer userId) {
-        Integer branchId = employeeRepository.findById(userId)
+    public RestPage<ShipmentDto> findAll(ShipmentSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {
+        Integer branchId = employeeRepository.findById(user.id())
                 .map(e -> e.getBranch().getId())
                 .orElse(null);
 
-        Specification<Shipment> spec = Specification.where(byBranch(branchId, userId));
+        Specification<Shipment> spec = Specification.where(byBranch(branchId, user.id()));
 
         if (criteria != null) {
             spec = spec

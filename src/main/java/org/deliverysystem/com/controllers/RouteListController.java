@@ -9,6 +9,7 @@ import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
 import org.deliverysystem.com.dtos.search.RouteListSearchCriteria;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.services.impl.RouteListService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
@@ -29,8 +30,8 @@ public class RouteListController {
     public ResponseEntity<RestPage<RouteListDto>> getAll(
             @ParameterObject RouteListSearchCriteria criteria,
             @ParameterObject Pageable pageable,
-            @CurrentUser Integer userId) {
-        return ResponseEntity.ok(routeListService.findAll(criteria, pageable, userId));
+            @CurrentUser CurrentUserDto user) {
+        return ResponseEntity.ok(routeListService.findAll(criteria, pageable, user));
     }
 
     @Operation(summary = "Статистика накладних (діапазони для фільтрів)")
