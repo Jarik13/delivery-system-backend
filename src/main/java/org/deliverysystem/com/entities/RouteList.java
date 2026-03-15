@@ -49,6 +49,10 @@ public class RouteList {
     private Courier courier;
 
     @ManyToOne
+    @JoinColumn(name = "created_by_id")
+    private Employee createdBy;
+
+    @ManyToOne
     @JoinColumn(name = "route_list_status_id")
     private RouteListStatus status;
 }
