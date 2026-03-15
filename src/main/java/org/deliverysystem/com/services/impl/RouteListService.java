@@ -98,18 +98,15 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "routeListPages", key = "{#criteria, #pageable}", condition = "#pageable.pageNumber < 10")
-    public RestPage<RouteListDto> findAll(RouteListSearchCriteria criteria, Pageable pageable) {
-        if (criteria == null) {
-            return new RestPage<>(routeListRepository.findAll(pageable).map(mapper::toDto));
-        }
-
+    @Cacheable(value = "routeListPages", key = "{#criteria, #pageable, #userId}", condition = "#pageable.pageNumber < 10")
+    public RestPage<RouteListDto> findAll(RouteListSearchCriteria criteria, Pageable pageable, Integer userId) {
         Specification<RouteList> spec = Specification
-                .where(SpecificationUtils.<RouteList>equal("number", criteria.number()))
-                .and(SpecificationUtils.equal("courier.id", criteria.courierId()))
-                .and(SpecificationUtils.in("status.id", criteria.statuses()))
-                .and(SpecificationUtils.gte("totalWeight", criteria.totalWeightMin()))
-                .and(SpecificationUtils.lte("totalWeight", criteria.totalWeightMax()));
+                .where(SpecificationUtils.<RouteList>equal("createdBy.id", userId))
+                .and(SpecificationUtils.equal("number", criteria != null ? criteria.number() : null))
+                .and(SpecificationUtils.equal("courier.id", criteria != null ? criteria.courierId() : null))
+                .and(SpecificationUtils.in("status.id", criteria != null ? criteria.statuses() : null))
+                .and(SpecificationUtils.gte("totalWeight", criteria != null ? criteria.totalWeightMin() : null))
+                .and(SpecificationUtils.lte("totalWeight", criteria != null ? criteria.totalWeightMax() : null));
 
         return new RestPage<>(routeListRepository.findAll(spec, pageable).map(mapper::toDto));
     }

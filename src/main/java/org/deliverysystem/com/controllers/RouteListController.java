@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
@@ -27,8 +28,9 @@ public class RouteListController {
     @Operation(summary = "Отримати всі маршрутні листи з фільтрацією та пагінацією")
     public ResponseEntity<RestPage<RouteListDto>> getAll(
             @ParameterObject RouteListSearchCriteria criteria,
-            @ParameterObject Pageable pageable) {
-        return ResponseEntity.ok(routeListService.findAll(criteria, pageable));
+            @ParameterObject Pageable pageable,
+            @CurrentUser Integer userId) {
+        return ResponseEntity.ok(routeListService.findAll(criteria, pageable, userId));
     }
 
     @Operation(summary = "Статистика накладних (діапазони для фільтрів)")
