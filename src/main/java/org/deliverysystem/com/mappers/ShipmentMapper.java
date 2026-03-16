@@ -84,16 +84,30 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
         String recipient = toFullName(shipment.getRecipient());
 
         String address = null;
-        if (shipment.getDestinationDeliveryPoint() != null
-            && shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null) {
+        String streetGroup = null;
+
+        if (shipment.getDestinationAddress() != null
+            && shipment.getDestinationAddress().getAddress() != null) {
+            var addr = shipment.getDestinationAddress().getAddress();
+            var house = addr.getHouse();
+            var street = house != null ? house.getStreet() : null;
+            var city = street != null ? street.getCity() : null;
+
+            String cityName = city != null ? city.getName() : "";
+            String streetName = street != null ? street.getName() : "";
+            String addrStr = formatAddress(addr);
+
+            address = cityName.isBlank() ? addrStr : cityName + ", " + addrStr;
+            streetGroup = cityName.isBlank()
+                    ? streetName
+                    : cityName + ", " + streetName;
+
+        } else if (shipment.getDestinationDeliveryPoint() != null
+                   && shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null) {
             var dp = shipment.getDestinationDeliveryPoint().getDeliveryPoint();
-            String city = dp.getCity() != null ? dp.getCity().getName() : "";
-            address = city.isBlank() ? dp.getName() : city + ", " + dp.getName();
-        } else if (shipment.getDestinationAddress() != null
-                   && shipment.getDestinationAddress().getAddress() != null) {
-            String city = resolveDestinationCity(shipment);
-            String addr = formatAddress(shipment.getDestinationAddress().getAddress());
-            address = city.isBlank() ? addr : city + ", " + addr;
+            String cityName = dp.getCity() != null ? dp.getCity().getName() : "";
+            address = cityName.isBlank() ? dp.getName() : cityName + ", " + dp.getName();
+            streetGroup = cityName.isBlank() ? "Самовивіз" : cityName + " — Самовивіз";
         }
 
         BigDecimal weight = shipment.getParcel() != null
@@ -107,6 +121,7 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
                 shipment.getTrackingNumber(),
                 recipient,
                 address,
+                streetGroup,
                 weight,
                 isExpress
         );

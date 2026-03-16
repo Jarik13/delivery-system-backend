@@ -17,6 +17,9 @@ public record RouteListShipmentDto(
         @Schema(description = "Адреса доставки або назва точки видачі")
         String deliveryAddress,
 
+        @Schema(description = "Група для групування: місто + вулиця або місто + Самовивіз")
+        String streetGroup,
+
         @Schema(description = "Фактична вага посилки, кг")
         BigDecimal weight,
 
