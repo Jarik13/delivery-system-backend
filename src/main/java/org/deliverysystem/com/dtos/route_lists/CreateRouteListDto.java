@@ -5,10 +5,12 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.deliverysystem.com.annotations.MinTotalWeight;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@MinTotalWeight
 @Schema(description = "Дані для створення нового маршрутного листа")
 public record CreateRouteListDto(
         @NotNull(message = "Оберіть кур'єра для маршруту")
