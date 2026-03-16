@@ -1,6 +1,7 @@
 package org.deliverysystem.com.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
 import org.deliverysystem.com.dtos.route_lists.UpdateShipmentDeliveryStatusDto;
 import org.deliverysystem.com.dtos.search.RouteListSearchCriteria;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
+import org.deliverysystem.com.export.RouteListExportContext;
 import org.deliverysystem.com.services.impl.RouteListService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
@@ -19,12 +21,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/route-lists")
 @RequiredArgsConstructor
 @Tag(name = "Route Lists", description = "Маршрутні листи кур'єрів")
 public class RouteListController {
     private final RouteListService routeListService;
+    private final RouteListExportContext exportContext;
 
     @GetMapping
     @Operation(summary = "Отримати всі маршрутні листи з фільтрацією та пагінацією")
@@ -74,5 +79,23 @@ public class RouteListController {
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         routeListService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Експорт маршрутних листів",
+            description = "Формати: csv | xlsx | pdf | json")
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            @Parameter(description = "Формат: csv | xlsx | pdf | json")
+            @RequestParam String format,
+            @Parameter(description = "Фільтр за номером")
+            @RequestParam(required = false) Integer number,
+            @Parameter(description = "Список конкретних ID")
+            @RequestParam(required = false) List<Integer> ids,
+            @CurrentUser CurrentUserDto currentUser) {
+        List<RouteListDto> routeLists = (ids != null && !ids.isEmpty())
+                ? routeListService.findAllByIds(ids)
+                : routeListService.findAllForExport(number, currentUser);
+
+        return exportContext.export(format, routeLists);
     }
 }

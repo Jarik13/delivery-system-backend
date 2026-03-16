@@ -136,6 +136,26 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         );
     }
 
+    @Transactional(readOnly = true)
+    public List<RouteListDto> findAllByIds(List<Integer> ids) {
+        return routeListRepository.findAllById(ids).stream().map(mapper::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RouteListDto> findAllForExport(Integer number, CurrentUserDto user) {
+        Specification<RouteList> accessSpec = "COURIER".equals(user.role())
+                ? SpecificationUtils.equal("courier.id", user.id())
+                : SpecificationUtils.equal("createdBy.id", user.id());
+
+        Specification<RouteList> spec = Specification
+                .where(accessSpec)
+                .and(SpecificationUtils.equal("number", number));
+
+        return routeListRepository.findAll(spec).stream()
+                .map(mapper::toDto)
+                .toList();
+    }
+
     @Transactional
     @CacheEvict(value = "routeListPages", allEntries = true)
     public void updateShipmentDeliveryStatus(Integer itemId, String action) {
