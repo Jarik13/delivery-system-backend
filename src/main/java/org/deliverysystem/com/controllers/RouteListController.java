@@ -61,13 +61,11 @@ public class RouteListController {
         return ResponseEntity.ok(routeListService.update(id, dto));
     }
 
-    @PatchMapping("/{routeListId}/shipments/{shipmentId}/status")
-    @Operation(summary = "Оновити статус відправлення кур'єром")
+    @PatchMapping("/items/{itemId}/status")
     public ResponseEntity<Void> updateShipmentStatus(
-            @PathVariable Integer routeListId,
-            @PathVariable Integer shipmentId,
+            @PathVariable Integer itemId,
             @RequestBody UpdateShipmentDeliveryStatusDto dto) {
-        routeListService.updateShipmentDeliveryStatus(routeListId, shipmentId, dto.action());
+        routeListService.updateShipmentDeliveryStatus(itemId, dto.action());
         return ResponseEntity.ok().build();
     }
 

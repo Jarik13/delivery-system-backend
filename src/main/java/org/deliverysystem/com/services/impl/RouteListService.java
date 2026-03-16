@@ -138,32 +138,28 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
 
     @Transactional
     @CacheEvict(value = "routeListPages", allEntries = true)
-    public void updateShipmentDeliveryStatus(Integer routeListId, Integer shipmentId, String action) {
-        RouteSheetItem item = routeSheetItemRepository.findByRouteListIdAndShipmentId(routeListId, shipmentId)
-                .orElseThrow(() -> new EntityNotFoundException("RouteSheetItem not found"));
+    public void updateShipmentDeliveryStatus(Integer itemId, String action) {
+        RouteSheetItem item = routeSheetItemRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("RouteSheetItem not found"));
 
         Shipment shipment = item.getShipment();
         LocalDateTime now = LocalDateTime.now();
 
         switch (action) {
             case "DELIVERED" -> {
-                ShipmentStatus status = shipmentStatusRepository.findByName("Доставлено")
-                        .orElseThrow();
+                ShipmentStatus status = shipmentStatusRepository.findByName("Доставлено").orElseThrow();
                 shipment.setShipmentStatus(status);
                 shipment.setIssuedAt(now);
                 item.setDelivered(true);
                 item.setDeliveredAt(now);
             }
             case "FAILED" -> {
-                ShipmentStatus status = shipmentStatusRepository.findByName("Спроба вручення провалена")
-                        .orElseThrow();
+                ShipmentStatus status = shipmentStatusRepository.findByName("Спроба вручення провалена").orElseThrow();
                 shipment.setShipmentStatus(status);
                 item.setDelivered(false);
                 item.setDeliveredAt(null);
             }
             case "REFUSED" -> {
-                ShipmentStatus status = shipmentStatusRepository.findByName("Відмова")
-                        .orElseThrow();
+                ShipmentStatus status = shipmentStatusRepository.findByName("Відмова").orElseThrow();
                 shipment.setShipmentStatus(status);
                 item.setDelivered(false);
                 item.setDeliveredAt(null);
@@ -196,8 +192,7 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
             newStatusName = "У процесі доставки";
         }
 
-        RouteListStatus status = routeListStatusRepository.findByName(newStatusName)
-                .orElseThrow();
+        RouteListStatus status = routeListStatusRepository.findByName(newStatusName).orElseThrow();
         routeList.setStatus(status);
         routeListRepository.save(routeList);
     }
