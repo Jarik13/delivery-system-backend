@@ -1,5 +1,6 @@
 package org.deliverysystem.com.services.impl;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
@@ -8,12 +9,10 @@ import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.exceptions.exceptions.BusinessValidationException;
 import org.deliverysystem.com.mappers.RouteListMapper;
-import org.deliverysystem.com.repositories.CourierRepository;
-import org.deliverysystem.com.repositories.RouteListRepository;
-import org.deliverysystem.com.repositories.RouteListStatusRepository;
-import org.deliverysystem.com.repositories.ShipmentRepository;
+import org.deliverysystem.com.repositories.*;
 import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +32,9 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
     private final RouteListRepository routeListRepository;
     private final ShipmentRepository shipmentRepository;
     private final CourierRepository courierRepository;
+    private final RouteSheetItemRepository routeSheetItemRepository;
     private final RouteListStatusRepository routeListStatusRepository;
+    private final ShipmentStatusRepository shipmentStatusRepository;
     private final RouteListMapper routeListMapper;
 
     public RouteListService(
@@ -40,12 +42,16 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
             RouteListMapper mapper,
             ShipmentRepository shipmentRepository,
             CourierRepository courierRepository,
+            RouteSheetItemRepository routeSheetItemRepository,
+            ShipmentStatusRepository shipmentStatusRepository,
             RouteListStatusRepository routeListStatusRepository) {
         super(mapper, repository);
         this.routeListRepository = repository;
         this.routeListMapper = mapper;
         this.shipmentRepository = shipmentRepository;
         this.courierRepository = courierRepository;
+        this.routeSheetItemRepository = routeSheetItemRepository;
+        this.shipmentStatusRepository = shipmentStatusRepository;
         this.routeListStatusRepository = routeListStatusRepository;
     }
 
@@ -128,5 +134,71 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
                 routeListRepository.getMaxTotalWeight(),
                 countByStatus
         );
+    }
+
+    @Transactional
+    @CacheEvict(value = "routeListPages", allEntries = true)
+    public void updateShipmentDeliveryStatus(Integer routeListId, Integer shipmentId, String action) {
+        RouteSheetItem item = routeSheetItemRepository.findByRouteListIdAndShipmentId(routeListId, shipmentId)
+                .orElseThrow(() -> new EntityNotFoundException("RouteSheetItem not found"));
+
+        Shipment shipment = item.getShipment();
+        LocalDateTime now = LocalDateTime.now();
+
+        switch (action) {
+            case "DELIVERED" -> {
+                ShipmentStatus status = shipmentStatusRepository.findByName("Доставлено")
+                        .orElseThrow();
+                shipment.setShipmentStatus(status);
+                shipment.setIssuedAt(now);
+                item.setDelivered(true);
+                item.setDeliveredAt(now);
+            }
+            case "FAILED" -> {
+                ShipmentStatus status = shipmentStatusRepository.findByName("Спроба вручення провалена")
+                        .orElseThrow();
+                shipment.setShipmentStatus(status);
+                item.setDelivered(false);
+                item.setDeliveredAt(null);
+            }
+            case "REFUSED" -> {
+                ShipmentStatus status = shipmentStatusRepository.findByName("Відмова")
+                        .orElseThrow();
+                shipment.setShipmentStatus(status);
+                item.setDelivered(false);
+                item.setDeliveredAt(null);
+            }
+            default -> throw new IllegalArgumentException("Unknown action: " + action);
+        }
+
+        shipmentRepository.save(shipment);
+        routeSheetItemRepository.save(item);
+
+        updateRouteListStatus(item.getRouteList());
+    }
+
+    private void updateRouteListStatus(RouteList routeList) {
+        List<RouteSheetItem> items = routeList.getRouteSheetItems();
+        long total = items.size();
+        long delivered = items.stream().filter(i -> Boolean.TRUE.equals(i.getDelivered())).count();
+        long refused = items.stream()
+                .filter(i -> "Відмова".equals(i.getShipment().getShipmentStatus().getName()))
+                .count();
+
+        String newStatusName;
+        if (delivered == total) {
+            newStatusName = "Завершено";
+        } else if ((delivered + refused) == total) {
+            newStatusName = "Завершено";
+        } else if (delivered > 0) {
+            newStatusName = "У процесі доставки";
+        } else {
+            newStatusName = "У процесі доставки";
+        }
+
+        RouteListStatus status = routeListStatusRepository.findByName(newStatusName)
+                .orElseThrow();
+        routeList.setStatus(status);
+        routeListRepository.save(routeList);
     }
 }

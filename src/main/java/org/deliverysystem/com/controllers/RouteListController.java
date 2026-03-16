@@ -8,6 +8,7 @@ import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
+import org.deliverysystem.com.dtos.route_lists.UpdateShipmentDeliveryStatusDto;
 import org.deliverysystem.com.dtos.search.RouteListSearchCriteria;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.services.impl.RouteListService;
@@ -58,6 +59,16 @@ public class RouteListController {
             @PathVariable Integer id,
             @Valid @RequestBody RouteListDto dto) {
         return ResponseEntity.ok(routeListService.update(id, dto));
+    }
+
+    @PatchMapping("/{routeListId}/shipments/{shipmentId}/status")
+    @Operation(summary = "Оновити статус відправлення кур'єром")
+    public ResponseEntity<Void> updateShipmentStatus(
+            @PathVariable Integer routeListId,
+            @PathVariable Integer shipmentId,
+            @RequestBody UpdateShipmentDeliveryStatusDto dto) {
+        routeListService.updateShipmentDeliveryStatus(routeListId, shipmentId, dto.action());
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
