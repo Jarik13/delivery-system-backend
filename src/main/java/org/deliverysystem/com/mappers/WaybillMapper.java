@@ -9,6 +9,7 @@ import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -29,6 +30,9 @@ public abstract class WaybillMapper implements GenericMapper<Waybill, WaybillDto
     @Mapping(source = "shipmentWaybills", target = "statusSummary", qualifiedByName = "mapStatusSummary")
     @Mapping(source = "waybillRoutes", target = "tripId", qualifiedByName = "mapTripId")
     @Mapping(source = "waybillRoutes", target = "tripNumber", qualifiedByName = "mapTripNumber")
+    @Mapping(source = "waybillRoutes", target = "totalDistanceKm", qualifiedByName = "mapTotalDistanceKm")
+    @Mapping(source = "waybillRoutes", target = "scheduledDeparture", qualifiedByName = "mapScheduledDeparture")
+    @Mapping(source = "waybillRoutes", target = "scheduledArrival", qualifiedByName = "mapScheduledArrival")
     public abstract WaybillDto toDto(Waybill entity);
 
     @Override
@@ -128,6 +132,36 @@ public abstract class WaybillMapper implements GenericMapper<Waybill, WaybillDto
                 .filter(wr -> wr.getTrip() != null)
                 .findFirst()
                 .map(wr -> wr.getTrip().getNumber())
+                .orElse(null);
+    }
+
+    @Named("mapTotalDistanceKm")
+    Float mapTotalDistanceKm(List<WaybillRoute> waybillRoutes) {
+        if (waybillRoutes == null || waybillRoutes.isEmpty()) return null;
+        double sum = waybillRoutes.stream()
+                .filter(wr -> wr.getRoute() != null && wr.getRoute().getDistanceKm() != null)
+                .mapToDouble(wr -> wr.getRoute().getDistanceKm())
+                .sum();
+        return sum > 0 ? (float) sum : null;
+    }
+
+    @Named("mapScheduledDeparture")
+    LocalDateTime mapScheduledDeparture(List<WaybillRoute> waybillRoutes) {
+        if (waybillRoutes == null || waybillRoutes.isEmpty()) return null;
+        return waybillRoutes.stream()
+                .filter(wr -> wr.getTrip() != null && wr.getTrip().getScheduledDepartureTime() != null)
+                .map(wr -> wr.getTrip().getScheduledDepartureTime())
+                .min(LocalDateTime::compareTo)
+                .orElse(null);
+    }
+
+    @Named("mapScheduledArrival")
+    LocalDateTime mapScheduledArrival(List<WaybillRoute> waybillRoutes) {
+        if (waybillRoutes == null || waybillRoutes.isEmpty()) return null;
+        return waybillRoutes.stream()
+                .filter(wr -> wr.getTrip() != null && wr.getTrip().getScheduledArrivalTime() != null)
+                .map(wr -> wr.getTrip().getScheduledArrivalTime())
+                .max(LocalDateTime::compareTo)
                 .orElse(null);
     }
 }
