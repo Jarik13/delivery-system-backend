@@ -38,12 +38,19 @@ public class RouteList {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "planned_departure_time")
+    private LocalDateTime plannedDepartureTime;
+
     @OneToMany(mappedBy = "routeList", cascade = CascadeType.ALL)
     private List<RouteSheetItem> routeSheetItems = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "courier_id")
     private Courier courier;
+
+    @ManyToOne
+    @JoinColumn(name = "created_by_id")
+    private Employee createdBy;
 
     @ManyToOne
     @JoinColumn(name = "route_list_status_id")

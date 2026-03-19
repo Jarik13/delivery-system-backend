@@ -37,4 +37,8 @@ public class BoxVariant {
     @ManyToOne
     @JoinColumn(name = "box_type_id")
     private BoxType boxType;
+
+    @ManyToOne
+    @JoinColumn(name = "weight_category_id")
+    private WeightCategory weightCategory;
 }

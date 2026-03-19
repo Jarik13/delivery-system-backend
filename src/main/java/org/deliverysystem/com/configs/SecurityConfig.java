@@ -44,10 +44,24 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**", "/ws").permitAll()
 
                         .requestMatchers("/api/v1/users/**").hasRole("SUPER_ADMIN")
+
                         .requestMatchers(HttpMethod.GET, "/api/v1/regions/**").hasAnyRole("SUPER_ADMIN", "EMPLOYEE", "DRIVER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/districts/**").hasAnyRole("SUPER_ADMIN", "EMPLOYEE", "DRIVER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/cities/**").hasAnyRole("SUPER_ADMIN", "EMPLOYEE", "DRIVER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/branches/**").hasAnyRole("SUPER_ADMIN", "EMPLOYEE", "DRIVER")
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/regions/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/regions/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/regions/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/districts/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/districts/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/districts/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/cities/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/cities/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/cities/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/branches/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/branches/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/branches/**").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/box-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/box-types/**").hasRole("ADMIN")
@@ -99,49 +113,49 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/payment-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/payment-types/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-brands/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-brands/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/fleet-brands/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-brands/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-brands/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-body-types/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-body-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/fleet-body-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-body-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-body-types/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-fuel-types/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-fuel-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/fleet-fuel-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-fuel-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-fuel-types/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-transmission-types/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-transmission-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/fleet-transmission-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-transmission-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-transmission-types/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-drive-types/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/fleet-drive-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/fleet-drive-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/fleet-drive-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/fleet-drive-types/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/vehicle-activity-statuses/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/vehicle-activity-statuses/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/vehicle-activity-statuses/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/vehicle-activity-statuses/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/vehicle-activity-statuses/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/trip-statuses/**").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/trip-statuses/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/trip-statuses/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/trip-statuses/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/trip-statuses/**").hasRole("ADMIN")
 
-                        .requestMatchers("/api/v1/route-lists/**").hasAnyRole("COURIER", "DRIVER")
+                        .requestMatchers("/api/v1/trips/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/waybills/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/routes/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/vehicles/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/drivers/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/fleets/**").hasAnyRole("EMPLOYEE", "DRIVER")
 
-                        .requestMatchers("/api/v1/trips/**").hasRole("DRIVER")
-                        .requestMatchers("/api/v1/routes/**").hasRole("DRIVER")
-                        .requestMatchers("/api/v1/waybills/**").hasRole("DRIVER")
-                        .requestMatchers("/api/v1/vehicles/**").hasRole("DRIVER")
-                        .requestMatchers("/api/v1/drivers/**").hasRole("DRIVER")
-                        .requestMatchers("/api/v1/fleets/**").hasRole("DRIVER")
+                        .requestMatchers("/api/v1/route-lists/**").hasAnyRole("EMPLOYEE", "COURIER", "DRIVER")
 
                         .requestMatchers("/api/v1/shipments/**").hasAnyRole("EMPLOYEE", "DRIVER")
                         .requestMatchers("/api/v1/parcels/**").hasAnyRole("EMPLOYEE", "DRIVER")
@@ -150,22 +164,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/postomats/**").hasAnyRole("EMPLOYEE", "DRIVER")
                         .requestMatchers("/api/v1/streets/**").hasAnyRole("EMPLOYEE", "DRIVER")
                         .requestMatchers("/api/v1/address-houses/**").hasAnyRole("EMPLOYEE", "DRIVER")
-
-                        .requestMatchers(HttpMethod.POST, "/api/v1/regions/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/regions/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/regions/**").hasAnyRole("EMPLOYEE", "DRIVER")
-
-                        .requestMatchers(HttpMethod.POST, "/api/v1/districts/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/districts/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/districts/**").hasAnyRole("EMPLOYEE", "DRIVER")
-
-                        .requestMatchers(HttpMethod.POST, "/api/v1/cities/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/cities/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/cities/**").hasAnyRole("EMPLOYEE", "DRIVER")
-
-                        .requestMatchers(HttpMethod.POST, "/api/v1/branches/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/branches/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/branches/**").hasAnyRole("EMPLOYEE", "DRIVER")
 
                         .anyRequest().authenticated()
                 )

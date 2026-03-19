@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,4 +78,15 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
            "AND s.issuedAt IS NULL " +
            "AND NOT EXISTS (SELECT sw FROM ShipmentWaybill sw WHERE sw.shipment = s)")
     List<Shipment> findSuggestedShipments(Integer originPointId, Integer destPointId);
+
+    @Query(value = """
+                SELECT s.* FROM shipments s
+                JOIN shipment_statuses ss ON ss.shipment_status_id = s.shipment_status_id
+                WHERE ss.shipment_status_name IN (N'Прибув у відділення', N'Прийнято у відділенні')
+                AND NOT EXISTS (
+                    SELECT 1 FROM route_sheet_items rsi WHERE rsi.shipment_id = s.shipment_id
+                )
+                ORDER BY s.created_at DESC
+            """, nativeQuery = true)
+    List<Shipment> findAvailableForRouteList();
 }

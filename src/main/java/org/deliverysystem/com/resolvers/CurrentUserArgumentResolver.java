@@ -2,6 +2,7 @@ package org.deliverysystem.com.resolvers;
 
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.annotations.CurrentUser;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.dtos.users.UserDbDataDto;
 import org.deliverysystem.com.enums.Role;
 import org.deliverysystem.com.services.strategy.UserPersistenceStrategyRegistry;
@@ -24,7 +25,8 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         return parameter.hasParameterAnnotation(CurrentUser.class)
-               && parameter.getParameterType().equals(Integer.class);
+               && (parameter.getParameterType().equals(Integer.class)
+                   || parameter.getParameterType().equals(CurrentUserDto.class));
     }
 
     @Override
@@ -41,10 +43,16 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
 
         try {
             Role role = Role.valueOf(roleStr);
-            return strategyRegistry.getStrategy(role)
+            Integer id = strategyRegistry.getStrategy(role)
                     .findByKeycloakId(keycloakId)
                     .map(UserDbDataDto::id)
                     .orElse(null);
+
+            if (parameter.getParameterType().equals(Integer.class)) {
+                return id;
+            }
+
+            return new CurrentUserDto(id, roleStr);
         } catch (Exception e) {
             return null;
         }

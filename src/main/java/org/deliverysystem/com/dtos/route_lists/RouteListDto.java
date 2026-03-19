@@ -35,6 +35,9 @@ public record RouteListDto(
         @Schema(description = "Дата та час створення")
         LocalDateTime createdAt,
 
+        @Schema(description = "Дата і час планового виїзду кур'єра")
+        LocalDateTime plannedDepartureTime,
+
         @Schema(description = "Список відправлень у маршруті")
         List<RouteSheetItemDto> items
 ) {}

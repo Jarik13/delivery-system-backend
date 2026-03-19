@@ -5,8 +5,10 @@ import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.deliverysystem.com.constants.ErrorMessage;
+import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.mappers.ShipmentMapper;
 import org.deliverysystem.com.repositories.*;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, Integer> {
+    private final ShipmentMapper shipmentMapper;
     private final ShipmentRepository shipmentRepository;
     private final ParcelRepository parcelRepository;
     private final ClientRepository clientRepository;
@@ -63,6 +66,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                            WaybillRouteStatusRepository waybillRouteStatusRepository, EmployeeRepository employeeRepository) {
         super(mapper, repo);
         this.shipmentRepository = repo;
+        this.shipmentMapper = mapper;
         this.parcelRepository = parcelRepository;
         this.clientRepository = clientRepository;
         this.statusRepository = statusRepository;
@@ -196,12 +200,12 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
 
     @Transactional(readOnly = true)
     @Cacheable(value = "shipmentPages", key = "{#criteria, #pageable, #userId}", condition = "#pageable.pageNumber < 5")
-    public RestPage<ShipmentDto> findAll(ShipmentSearchCriteria criteria, Pageable pageable, Integer userId) {
-        Integer branchId = employeeRepository.findById(userId)
+    public RestPage<ShipmentDto> findAll(ShipmentSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {
+        Integer branchId = employeeRepository.findById(user.id())
                 .map(e -> e.getBranch().getId())
                 .orElse(null);
 
-        Specification<Shipment> spec = Specification.where(byBranch(branchId, userId));
+        Specification<Shipment> spec = Specification.where(byBranch(branchId, user.id()));
 
         if (criteria != null) {
             spec = spec
@@ -406,6 +410,13 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
 
         return suggested.stream()
                 .map(mapper::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RouteListShipmentDto> getAvailableForRouteList() {
+        return shipmentRepository.findAvailableForRouteList().stream()
+                .map(shipmentMapper::toRouteListDto)
                 .toList();
     }
 
