@@ -8,6 +8,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Mapper(componentModel = "spring", uses = {PaymentMapper.class, ReturnMapper.class})
 public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
@@ -49,6 +50,23 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(target = "waybillNumber", source = "entity", qualifiedByName = "resolveWaybillNumber")
     @Mapping(target = "routeListId", source = "entity", qualifiedByName = "resolveRouteListId")
     @Mapping(target = "routeListNumber", source = "entity", qualifiedByName = "resolveRouteListNumber")
+    @Mapping(target = "boxVariantId", source = "entity", qualifiedByName = "resolveBoxVariantId")
+    @Mapping(target = "parcelTypeId", source = "parcel.parcelType.id")
+    @Mapping(target = "storageConditionIds", source = "entity", qualifiedByName = "resolveStorageConditionIds")
+    @Mapping(target = "originDeliveryPointId", source = "entity", qualifiedByName = "resolveOriginDeliveryPointId")
+    @Mapping(target = "originCityId", source = "entity", qualifiedByName = "resolveOriginCityId")
+    @Mapping(target = "originType", source = "entity", qualifiedByName = "resolveOriginType")
+    @Mapping(target = "destinationDeliveryPointId", source = "entity", qualifiedByName = "resolveDestinationDeliveryPointId")
+    @Mapping(target = "destinationCityId", source = "entity", qualifiedByName = "resolveDestinationCityId")
+    @Mapping(target = "destinationType", source = "entity", qualifiedByName = "resolveDestinationType")
+    @Mapping(target = "originStreetId", source = "entity", qualifiedByName = "resolveOriginStreetId")
+    @Mapping(target = "originHouseNumber", source = "entity", qualifiedByName = "resolveOriginHouseNumber")
+    @Mapping(target = "originApartmentNumber", source = "entity", qualifiedByName = "resolveOriginApartmentNumber")
+    @Mapping(target = "destinationStreetId", source = "entity", qualifiedByName = "resolveDestinationStreetId")
+    @Mapping(target = "destinationHouseNumber", source = "entity", qualifiedByName = "resolveDestinationHouseNumber")
+    @Mapping(target = "destinationApartmentNumber", source = "entity", qualifiedByName = "resolveDestinationApartmentNumber")
+    @Mapping(target = "partialAmount", source = "entity", qualifiedByName = "resolvePartialAmount")
+    @Mapping(target = "declaredValue", source = "parcel.declaredValue")
     @Mapping(source = "payments", target = "payments")
     @Mapping(source = "returns", target = "returns")
     ShipmentDto toDto(Shipment entity);
@@ -173,6 +191,110 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @Named("resolveBoxVariantId")
+    default Integer resolveBoxVariantId(Shipment shipment) {
+        try { return shipment.getShipmentBox().getBoxVariant().getId(); }
+        catch (Exception e) { return null; }
+    }
+
+    @Named("resolveStorageConditionIds")
+    default List<Integer> resolveStorageConditionIds(Shipment shipment) {
+        try {
+            return shipment.getParcel().getStorageConditions().stream()
+                    .map(StorageCondition::getId)
+                    .toList();
+        } catch (Exception e) { return List.of(); }
+    }
+
+    @Named("resolveOriginDeliveryPointId")
+    default Integer resolveOriginDeliveryPointId(Shipment shipment) {
+        try { return shipment.getOriginDeliveryPoint().getDeliveryPoint().getId(); }
+        catch (Exception e) { return null; }
+    }
+
+    @Named("resolveOriginCityId")
+    default Integer resolveOriginCityId(Shipment shipment) {
+        try {
+            if (shipment.getOriginDeliveryPoint() != null)
+                return shipment.getOriginDeliveryPoint().getDeliveryPoint().getCity().getId();
+            return shipment.getOriginAddress().getAddress().getHouse().getStreet().getCity().getId();
+        } catch (Exception e) { return null; }
+    }
+
+    @Named("resolveOriginType")
+    default String resolveOriginType(Shipment shipment) {
+        if (shipment.getOriginDeliveryPoint() != null) return "BRANCH";
+        if (shipment.getOriginAddress() != null) return "ADDRESS";
+        return null;
+    }
+
+    @Named("resolveDestinationDeliveryPointId")
+    default Integer resolveDestinationDeliveryPointId(Shipment shipment) {
+        try { return shipment.getDestinationDeliveryPoint().getDeliveryPoint().getId(); }
+        catch (Exception e) { return null; }
+    }
+
+    @Named("resolveDestinationCityId")
+    default Integer resolveDestinationCityId(Shipment shipment) {
+        try {
+            if (shipment.getDestinationDeliveryPoint() != null)
+                return shipment.getDestinationDeliveryPoint().getDeliveryPoint().getCity().getId();
+            return shipment.getDestinationAddress().getAddress().getHouse().getStreet().getCity().getId();
+        } catch (Exception e) { return null; }
+    }
+
+    @Named("resolveDestinationType")
+    default String resolveDestinationType(Shipment shipment) {
+        if (shipment.getDestinationDeliveryPoint() != null) return "BRANCH";
+        if (shipment.getDestinationAddress() != null) return "ADDRESS";
+        return null;
+    }
+
+    @Named("resolveOriginStreetId")
+    default Integer resolveOriginStreetId(Shipment shipment) {
+        try { return shipment.getOriginAddress().getAddress().getHouse().getStreet().getId(); }
+        catch (Exception e) { return null; }
+    }
+
+    @Named("resolveOriginHouseNumber")
+    default String resolveOriginHouseNumber(Shipment shipment) {
+        try { return shipment.getOriginAddress().getAddress().getHouse().getNumber(); }
+        catch (Exception e) { return null; }
+    }
+
+    @Named("resolveOriginApartmentNumber")
+    default Integer resolveOriginApartmentNumber(Shipment shipment) {
+        try { return shipment.getOriginAddress().getAddress().getApartmentNumber(); }
+        catch (Exception e) { return null; }
+    }
+
+    @Named("resolveDestinationStreetId")
+    default Integer resolveDestinationStreetId(Shipment shipment) {
+        try { return shipment.getDestinationAddress().getAddress().getHouse().getStreet().getId(); }
+        catch (Exception e) { return null; }
+    }
+
+    @Named("resolveDestinationHouseNumber")
+    default String resolveDestinationHouseNumber(Shipment shipment) {
+        try { return shipment.getDestinationAddress().getAddress().getHouse().getNumber(); }
+        catch (Exception e) { return null; }
+    }
+
+    @Named("resolveDestinationApartmentNumber")
+    default Integer resolveDestinationApartmentNumber(Shipment shipment) {
+        try { return shipment.getDestinationAddress().getAddress().getApartmentNumber(); }
+        catch (Exception e) { return null; }
+    }
+
+    @Named("resolvePartialAmount")
+    default BigDecimal resolvePartialAmount(Shipment shipment) {
+        try {
+            if (!Boolean.TRUE.equals(shipment.getPartiallyPaid())) return null;
+            BigDecimal totalPaid = calculateTotalPaid(shipment);
+            return totalPaid.compareTo(BigDecimal.ZERO) > 0 ? totalPaid : null;
+        } catch (Exception e) { return null; }
     }
 
     @Named("resolveBoxVariantName")

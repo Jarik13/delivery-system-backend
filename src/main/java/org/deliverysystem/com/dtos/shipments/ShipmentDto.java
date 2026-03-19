@@ -42,6 +42,57 @@ public record ShipmentDto(
         Integer shipmentStatusId,
         Integer createdById,
 
+        @Schema(description = "ID варіанту коробки для редагування")
+        Integer boxVariantId,
+
+        @Schema(description = "ID типу посилки для редагування")
+        Integer parcelTypeId,
+
+        @Schema(description = "IDs умов зберігання для редагування")
+        List<Integer> storageConditionIds,
+
+        @Schema(description = "ID точки відправлення")
+        Integer originDeliveryPointId,
+
+        @Schema(description = "ID міста відправлення")
+        Integer originCityId,
+
+        @Schema(description = "Тип відправлення (BRANCH/ADDRESS)")
+        String originType,
+
+        @Schema(description = "ID точки призначення")
+        Integer destinationDeliveryPointId,
+
+        @Schema(description = "ID міста призначення")
+        Integer destinationCityId,
+
+        @Schema(description = "Тип призначення (BRANCH/ADDRESS)")
+        String destinationType,
+
+        @Schema(description = "ID вулиці відправлення")
+        Integer originStreetId,
+
+        @Schema(description = "Номер будинку відправлення")
+        String originHouseNumber,
+
+        @Schema(description = "Номер квартири відправлення")
+        Integer originApartmentNumber,
+
+        @Schema(description = "ID вулиці призначення")
+        Integer destinationStreetId,
+
+        @Schema(description = "Номер будинку призначення")
+        String destinationHouseNumber,
+
+        @Schema(description = "Номер квартири призначення")
+        Integer destinationApartmentNumber,
+
+        @Schema(description = "Часткова сума оплати")
+        BigDecimal partialAmount,
+
+        @Schema(description = "Оголошена вартість")
+        BigDecimal declaredValue,
+
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String senderFullName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String recipientFullName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String parcelDescription,
