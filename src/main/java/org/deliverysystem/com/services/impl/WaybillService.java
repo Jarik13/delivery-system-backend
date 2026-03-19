@@ -2,8 +2,8 @@ package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.search.WaybillSearchCriteria;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.dtos.waybills.*;
 import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.mappers.WaybillMapper;
@@ -51,18 +51,18 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
     }
 
     @Transactional(readOnly = true)
-    public RestPage<WaybillDto> findAll(WaybillSearchCriteria criteria, Pageable pageable) {
-        if (criteria == null) {
-            return new RestPage<>(waybillRepository.findAll(pageable).map(mapper::toDto));
-        }
+    public RestPage<WaybillDto> findAll(WaybillSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {
+        Specification<Waybill> spec = Specification.where(SpecificationUtils.equal("createdBy.id", user.id()));
 
-        Specification<Waybill> spec = Specification
-                .where(SpecificationUtils.<Waybill>equal("number", criteria.number()))
-                .and(SpecificationUtils.gte("totalWeight", criteria.totalWeightMin()))
-                .and(SpecificationUtils.lte("totalWeight", criteria.totalWeightMax()))
-                .and(SpecificationUtils.gte("createdAt", criteria.createdAtFrom()))
-                .and(SpecificationUtils.lte("createdAt", criteria.createdAtTo()))
-                .and(SpecificationUtils.equal("createdBy.id", criteria.createdById()));
+        if (criteria != null) {
+            spec = spec
+                    .and(SpecificationUtils.equal("number", criteria.number()))
+                    .and(SpecificationUtils.gte("totalWeight", criteria.totalWeightMin()))
+                    .and(SpecificationUtils.lte("totalWeight", criteria.totalWeightMax()))
+                    .and(SpecificationUtils.gte("createdAt", criteria.createdAtFrom()))
+                    .and(SpecificationUtils.lte("createdAt", criteria.createdAtTo()))
+                    .and(SpecificationUtils.equal("createdBy.id", criteria.createdById()));
+        }
 
         return new RestPage<>(waybillRepository.findAll(spec, pageable).map(mapper::toDto));
     }
@@ -188,7 +188,7 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
     }
 
     @Transactional
-    public WaybillDto create(CreateWaybillDto dto) {
+    public WaybillDto create(CreateWaybillDto dto, CurrentUserDto user) {
         Trip trip = tripRepository.findById(dto.tripId())
                 .orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено: " + dto.tripId()));
 
@@ -205,17 +205,16 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
             throw new EntityNotFoundException("Деякі відправлення не знайдено");
         }
 
-//        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-//        Employee createdBy = employeeRepository.findByUsername(username)
-//                .orElseThrow(() -> new EntityNotFoundException("Співробітника не знайдено: " + username));
+        Employee createdBy = employeeRepository.findById(user.id())
+                .orElseThrow(() -> new EntityNotFoundException("Співробітника не знайдено: " + user.id()));
 
-        // 5. Розраховуємо загальну вагу
         BigDecimal totalWeight = shipments.stream()
-                .map(s -> s.getPrice().getWeight()
-                        .divide(new BigDecimal("4.5"), 2, RoundingMode.HALF_UP))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(s -> s.getParcel() != null && s.getParcel().getActualWeight() != null
+                        ? s.getParcel().getActualWeight()
+                        : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
 
-        // 6. Генеруємо номер накладної (наступний після максимального)
         Integer nextNumber = waybillRepository.findMaxNumber()
                 .map(max -> max + 1)
                 .orElse(300001);
@@ -224,7 +223,7 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
         waybill.setNumber(nextNumber);
         waybill.setTotalWeight(totalWeight);
         waybill.setVolume(BigDecimal.ZERO);
-        waybill.setCreatedBy(null);
+        waybill.setCreatedBy(createdBy);
 
         Waybill saved = waybillRepository.save(waybill);
 

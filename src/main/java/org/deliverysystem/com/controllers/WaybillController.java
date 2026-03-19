@@ -4,7 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.search.WaybillSearchCriteria;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.dtos.waybills.CreateWaybillDto;
 import org.deliverysystem.com.dtos.waybills.WaybillDetailsDto;
 import org.deliverysystem.com.dtos.waybills.WaybillDto;
@@ -33,13 +35,14 @@ public class WaybillController {
         this.exportContext = exportContext;
     }
 
-    @Operation(summary = "Отримати всі накладні (пагінація)")
+    @Operation(summary = "Отримати накладні з фільтрацією та пагінацією")
     @GetMapping
     public ResponseEntity<RestPage<WaybillDto>> getAll(
             @ParameterObject WaybillSearchCriteria criteria,
-            @ParameterObject Pageable pageable
+            @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserDto user
     ) {
-        return ResponseEntity.ok(waybillService.findAll(criteria, pageable));
+        return ResponseEntity.ok(waybillService.findAll(criteria, pageable, user));
     }
 
     @Operation(summary = "Статистика накладних (діапазони для фільтрів)")
@@ -60,10 +63,12 @@ public class WaybillController {
         return ResponseEntity.ok(waybillService.findById(id));
     }
 
-    @Operation(summary = "Створити накладну")
     @PostMapping
-    public ResponseEntity<WaybillDto> create(@Valid @RequestBody CreateWaybillDto dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(waybillService.create(dto));
+    public ResponseEntity<WaybillDto> create(
+            @Valid @RequestBody CreateWaybillDto dto,
+            @CurrentUser CurrentUserDto user
+    ) {
+        return new ResponseEntity<>(waybillService.create(dto, user), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Видалити накладну")
