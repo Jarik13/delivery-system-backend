@@ -7,6 +7,7 @@ import org.deliverysystem.com.dtos.trips.TripDto;
 import org.deliverysystem.com.dtos.search.TripSearchCriteria;
 import org.deliverysystem.com.dtos.trips.TripSegmentDto;
 import org.deliverysystem.com.dtos.trips.WaypointInputDto;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.Branch;
 import org.deliverysystem.com.entities.Route;
 import org.deliverysystem.com.entities.Trip;
@@ -17,7 +18,6 @@ import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -114,33 +114,32 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "tripPages", key = "{#criteria, #pageable}", condition = "#pageable.pageNumber < 10")
-    public RestPage<TripDto> findAll(TripSearchCriteria criteria, Pageable pageable) {
-        if (criteria == null) {
-            Page<TripDto> result = tripRepository.findAll(pageable).map(mapper::toDto);
-            return new RestPage<>(result);
+    @Cacheable(value = "tripPages", key = "{#criteria, #pageable, #user}", condition = "#pageable.pageNumber < 10")
+    public RestPage<TripDto> findAll(TripSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {
+        Specification<Trip> accessSpec = buildAccessSpec(user);
+
+        Specification<Trip> spec = Specification.where(accessSpec);
+
+        if (criteria != null) {
+            spec = spec
+                    .and(SpecificationUtils.iLike("number", criteria.tripNumber()))
+                    .and(SpecificationUtils.in("status.id", criteria.tripStatuses()))
+                    .and(SpecificationUtils.equal("driver.id", criteria.driverId()))
+                    .and(SpecificationUtils.equal("vehicle.id", criteria.vehicleId()))
+                    .and(originCitySpec(criteria.originCity()))
+                    .and(destinationCitySpec(criteria.destinationCity()))
+                    .and(anyCitySpec(criteria.anyCity()))
+                    .and(SpecificationUtils.gte("scheduledDepartureTime", criteria.scheduledDepartureFrom()))
+                    .and(SpecificationUtils.lte("scheduledDepartureTime", criteria.scheduledDepartureTo()))
+                    .and(SpecificationUtils.gte("actualDepartureTime", criteria.actualDepartureFrom()))
+                    .and(SpecificationUtils.lte("actualDepartureTime", criteria.actualDepartureTo()))
+                    .and(SpecificationUtils.gte("scheduledArrivalTime", criteria.scheduledArrivalFrom()))
+                    .and(SpecificationUtils.lte("scheduledArrivalTime", criteria.scheduledArrivalTo()))
+                    .and(SpecificationUtils.gte("actualArrivalTime", criteria.actualArrivalFrom()))
+                    .and(SpecificationUtils.lte("actualArrivalTime", criteria.actualArrivalTo()));
         }
 
-        Specification<Trip> spec = Specification.where(
-                        SpecificationUtils.<Trip>iLike("number", criteria.tripNumber())
-                )
-                .and(SpecificationUtils.in("status.id", criteria.tripStatuses()))
-                .and(SpecificationUtils.equal("driver.id", criteria.driverId()))
-                .and(SpecificationUtils.equal("vehicle.id", criteria.vehicleId()))
-                .and(originCitySpec(criteria.originCity()))
-                .and(destinationCitySpec(criteria.destinationCity()))
-                .and(anyCitySpec(criteria.anyCity()))
-                .and(SpecificationUtils.gte("scheduledDepartureTime", criteria.scheduledDepartureFrom()))
-                .and(SpecificationUtils.lte("scheduledDepartureTime", criteria.scheduledDepartureTo()))
-                .and(SpecificationUtils.gte("actualDepartureTime", criteria.actualDepartureFrom()))
-                .and(SpecificationUtils.lte("actualDepartureTime", criteria.actualDepartureTo()))
-                .and(SpecificationUtils.gte("scheduledArrivalTime", criteria.scheduledArrivalFrom()))
-                .and(SpecificationUtils.lte("scheduledArrivalTime", criteria.scheduledArrivalTo()))
-                .and(SpecificationUtils.gte("actualArrivalTime", criteria.actualArrivalFrom()))
-                .and(SpecificationUtils.lte("actualArrivalTime", criteria.actualArrivalTo()));
-
-        Page<TripDto> result = tripRepository.findAll(spec, pageable).map(mapper::toDto);
-        return new RestPage<>(result);
+        return new RestPage<>(tripRepository.findAll(spec, pageable).map(mapper::toDto));
     }
 
     @Transactional(readOnly = true)
@@ -164,19 +163,22 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                         originCityName = city.getName();
                         originLat = city.getLatitude();
                         originLng = city.getLongitude();
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
 
                     try {
                         var city = route.getDestinationBranch().getDeliveryPoint().getCity();
                         destCityName = city.getName();
                         destLat = city.getLatitude();
                         destLng = city.getLongitude();
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
 
                     try {
                         if (route.getDistanceKm() != null)
                             distance = Double.valueOf(route.getDistanceKm());
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
 
                     boolean hasWaybill = waybillRouteRepository
                             .existsByTripIdAndRouteIdAndWaybillIsNotNull(tripId, route.getId());
@@ -237,5 +239,12 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                     cb.like(cb.lower(destCity.get("name")), pattern)
             );
         };
+    }
+
+    private Specification<Trip> buildAccessSpec(CurrentUserDto user) {
+        if ("DRIVER".equals(user.role())) {
+            return SpecificationUtils.equal("driver.id", user.id());
+        }
+        return (root, query, cb) -> cb.conjunction();
     }
 }

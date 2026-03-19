@@ -4,10 +4,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.trips.CreateTripDto;
 import org.deliverysystem.com.dtos.trips.TripDto;
 import org.deliverysystem.com.dtos.search.TripSearchCriteria;
 import org.deliverysystem.com.dtos.trips.TripSegmentDto;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.services.impl.TripService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
@@ -28,9 +30,10 @@ public class TripController {
     @Operation(summary = "Отримати список рейсів з фільтрацією")
     public ResponseEntity<RestPage<TripDto>> getAll(
             @ParameterObject TripSearchCriteria criteria,
-            @ParameterObject Pageable pageable
+            @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserDto user
     ) {
-        return ResponseEntity.ok(tripService.findAll(criteria, pageable));
+        return ResponseEntity.ok(tripService.findAll(criteria, pageable, user));
     }
 
     @GetMapping("/{id}/segments")
