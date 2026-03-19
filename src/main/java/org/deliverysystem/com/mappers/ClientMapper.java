@@ -1,6 +1,6 @@
 package org.deliverysystem.com.mappers;
 
-import org.deliverysystem.com.dtos.ClientDto;
+import org.deliverysystem.com.dtos.clients.ClientDto;
 import org.deliverysystem.com.entities.Client;
 import org.mapstruct.Mapper;
 
