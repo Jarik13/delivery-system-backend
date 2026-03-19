@@ -4,10 +4,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.payments.PaymentDto;
 import org.deliverysystem.com.dtos.payments.PaymentStatisticDto;
 import org.deliverysystem.com.dtos.search.PaymentSearchCriteria;
-import org.deliverysystem.com.dtos.shipments.ShipmentStatisticsDto;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.services.impl.PaymentService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
@@ -27,9 +28,10 @@ public class PaymentController {
     @GetMapping
     public ResponseEntity<RestPage<PaymentDto>> getAll(
             @ParameterObject PaymentSearchCriteria criteria,
-            @ParameterObject Pageable pageable
+            @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserDto user
     ) {
-        return ResponseEntity.ok(paymentService.findAll(criteria, pageable));
+        return ResponseEntity.ok(paymentService.findAll(criteria, pageable, user));
     }
 
     @Operation(summary = "Отримати статистику по відправленням (мін/макс значення)")

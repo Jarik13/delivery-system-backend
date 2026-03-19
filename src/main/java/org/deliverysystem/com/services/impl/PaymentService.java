@@ -3,8 +3,10 @@ package org.deliverysystem.com.services.impl;
 import org.deliverysystem.com.dtos.payments.PaymentDto;
 import org.deliverysystem.com.dtos.payments.PaymentStatisticDto;
 import org.deliverysystem.com.dtos.search.PaymentSearchCriteria;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.Payment;
 import org.deliverysystem.com.mappers.PaymentMapper;
+import org.deliverysystem.com.repositories.EmployeeRepository;
 import org.deliverysystem.com.repositories.PaymentRepository;
 import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
@@ -20,31 +22,35 @@ import java.math.BigDecimal;
 @Service
 public class PaymentService extends AbstractBaseService<Payment, PaymentDto, Integer> {
     private final PaymentRepository paymentRepository;
+    private final EmployeeRepository employeeRepository;
 
-    public PaymentService(PaymentRepository repo, PaymentMapper mapper) {
-        super(mapper, repo);
-        this.paymentRepository = repo;
+    public PaymentService(PaymentRepository paymentRepository, PaymentMapper mapper, EmployeeRepository employeeRepository) {
+        super(mapper, paymentRepository);
+        this.paymentRepository = paymentRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     @Transactional(readOnly = true)
-    public RestPage<PaymentDto> findAll(PaymentSearchCriteria criteria, Pageable pageable) {
-        if (criteria == null) {
-            Page<PaymentDto> result = paymentRepository.findAll(pageable).map(mapper::toDto);
-            return new RestPage<>(result);
+    public RestPage<PaymentDto> findAll(PaymentSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {
+        Integer branchId = employeeRepository.findById(user.id())
+                .map(e -> e.getBranch() != null ? e.getBranch().getId() : null)
+                .orElse(null);
+
+        Specification<Payment> spec = Specification.where(byBranch(branchId));
+
+        if (criteria != null) {
+            spec = spec
+                    .and(SpecificationUtils.iLike("transactionNumber", criteria.transactionNumber()))
+                    .and(SpecificationUtils.iLike("shipment.trackingNumber", criteria.shipmentTrackingNumber()))
+                    .and(SpecificationUtils.equal("shipment.id", criteria.shipmentId()))
+                    .and(SpecificationUtils.in("paymentType.id", criteria.paymentTypes()))
+                    .and(SpecificationUtils.gte("amount", criteria.amountMin()))
+                    .and(SpecificationUtils.lte("amount", criteria.amountMax()))
+                    .and(SpecificationUtils.gte("date", criteria.paymentDateFrom()))
+                    .and(SpecificationUtils.lte("date", criteria.paymentDateTo()));
         }
 
-        Specification<Payment> spec = Specification
-                .where(SpecificationUtils.<Payment>iLike("transactionNumber", criteria.transactionNumber()))
-                .and(SpecificationUtils.iLike("shipment.trackingNumber", criteria.shipmentTrackingNumber()))
-                .and(SpecificationUtils.equal("shipment.id", criteria.shipmentId()))
-                .and(SpecificationUtils.in("paymentType.id", criteria.paymentTypes()))
-                .and(SpecificationUtils.gte("amount", criteria.amountMin()))
-                .and(SpecificationUtils.lte("amount", criteria.amountMax()))
-                .and(SpecificationUtils.gte("date", criteria.paymentDateFrom()))
-                .and(SpecificationUtils.lte("date", criteria.paymentDateTo()));
-
-        Page<PaymentDto> result = paymentRepository.findAll(spec, pageable).map(mapper::toDto);
-        return new RestPage<>(result);
+        return new RestPage<>(paymentRepository.findAll(spec, pageable).map(mapper::toDto));
     }
 
     @Transactional(readOnly = true)
@@ -54,5 +60,19 @@ public class PaymentService extends AbstractBaseService<Payment, PaymentDto, Int
         BigDecimal amountMax = paymentRepository.getMaxAmount();
 
         return new PaymentStatisticDto(amountMin, amountMax);
+    }
+
+    private Specification<Payment> byBranch(Integer branchId) {
+        if (branchId == null) return (root, query, cb) -> cb.conjunction();
+        return (root, query, cb) -> cb.or(
+                cb.equal(
+                        root.join("shipment").join("originDeliveryPoint").join("deliveryPoint").join("branch").get("id"),
+                        branchId
+                ),
+                cb.equal(
+                        root.join("shipment").join("destinationDeliveryPoint").join("deliveryPoint").join("branch").get("id"),
+                        branchId
+                )
+        );
     }
 }
