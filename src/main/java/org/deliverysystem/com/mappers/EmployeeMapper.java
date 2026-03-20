@@ -1,6 +1,6 @@
 package org.deliverysystem.com.mappers;
 
-import org.deliverysystem.com.dtos.EmployeeDto;
+import org.deliverysystem.com.dtos.employees.EmployeeDto;
 import org.deliverysystem.com.entities.Employee;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

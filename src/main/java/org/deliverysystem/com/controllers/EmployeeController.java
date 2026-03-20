@@ -2,10 +2,11 @@ package org.deliverysystem.com.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.deliverysystem.com.dtos.EmployeeDto;
+import org.deliverysystem.com.annotations.CurrentUser;
+import org.deliverysystem.com.dtos.employees.EmployeeDto;
+import org.deliverysystem.com.dtos.employees.EmployeeProfileDto;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.services.impl.EmployeeService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,9 +21,9 @@ public class EmployeeController extends AbstractBaseController<EmployeeDto, Inte
         this.employeeService = service;
     }
 
-    @Operation(summary = "Отримати всіх співробітників відділення")
-    @GetMapping("/by-branch/{branchId}")
-    public ResponseEntity<Page<EmployeeDto>> getByBranch(@PathVariable Integer branchId, Pageable pageable) {
-        return ResponseEntity.ok(employeeService.findAllByBranchId(branchId, pageable));
+    @GetMapping("/me")
+    @Operation(summary = "Отримати дані поточного працівника")
+    public ResponseEntity<EmployeeProfileDto> getMe(@CurrentUser CurrentUserDto user) {
+        return ResponseEntity.ok(employeeService.getProfile(user.id()));
     }
 }
