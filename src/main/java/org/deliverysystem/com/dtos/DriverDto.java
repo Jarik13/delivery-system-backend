@@ -27,5 +27,8 @@ public record DriverDto(
 
         @NotBlank
         @Schema(description = "Номер посвідчення", example = "BX123456")
-        String licenseNumber
+        String licenseNumber,
+
+        @Schema(description = "Чи має водій активний рейс")
+        Boolean hasActiveTrip
 ) {}
