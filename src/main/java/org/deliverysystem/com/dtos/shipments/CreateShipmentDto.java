@@ -67,6 +67,12 @@ public record CreateShipmentDto(
         @Schema(description = "ID варіанту пакування")
         Integer boxVariantId,
 
+        @Schema(description = "ID способу оплати")
+        Integer paymentTypeId,
+
+        @Schema(description = "Чи повністю оплачено")
+        Boolean isFullyPaid,
+
         @NotNull(message = "Дані розрахунку вартості мають бути додані до запиту")
         @Valid
         @Schema(description = "Результати тарифікації для перевірки")

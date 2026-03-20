@@ -83,8 +83,11 @@ public class ShipmentController {
 
     @Operation(summary = "Оновити існуюче відправлення")
     @PutMapping("/{id}")
-    public ResponseEntity<ShipmentDto> update(@PathVariable Integer id, @Valid @RequestBody ShipmentDto dto) {
-        return ResponseEntity.ok(shipmentService.update(id, dto));
+    public ResponseEntity<ShipmentDto> update(
+            @PathVariable Integer id,
+            @Valid @RequestBody CreateShipmentDto dto,
+            @CurrentUser Integer userId) {
+        return ResponseEntity.ok(shipmentService.updateComplexShipment(id, dto, userId));
     }
 
     @Operation(summary = "Видалити відправлення")

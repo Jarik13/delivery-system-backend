@@ -11,6 +11,9 @@ public record RouteLocationDto(
         @Schema(description = "ID відділення або поштомату")
         Integer deliveryPointId,
 
+        @Schema(description = "ID міста")
+        Integer cityId,
+
         @Schema(description = "ID вулиці (для адресної доставки)")
         Integer streetId,
 

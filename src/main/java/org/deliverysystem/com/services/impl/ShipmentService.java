@@ -42,6 +42,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     private final DeliveryPointRepository deliveryPointRepository;
     private final PaymentRepository paymentRepository;
     private final ParcelTypeRepository parcelTypeRepository;
+    private final PaymentTypeRepository paymentTypeRepository;
 
     private final ShipmentBoxRepository shipmentBoxRepository;
     private final ShipmentOriginDeliveryPointRepository originDeliveryPointRepository;
@@ -60,7 +61,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                            ParcelRepository parcelRepository, ClientRepository clientRepository,
                            ShipmentStatusRepository statusRepository, ShipmentTypeRepository typeRepository,
                            StorageConditionRepository storageConditionRepository, BoxVariantRepository boxVariantRepository, DeliveryPointRepository deliveryPointRepository,
-                           PaymentRepository paymentRepository, ParcelTypeRepository parcelTypeRepository, ShipmentBoxRepository shipmentBoxRepository,
+                           PaymentRepository paymentRepository, ParcelTypeRepository parcelTypeRepository, PaymentTypeRepository paymentTypeRepository, ShipmentBoxRepository shipmentBoxRepository,
                            ShipmentOriginDeliveryPointRepository originDeliveryPointRepository, ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository, ShipmentOriginAddressRepository originAddressRepository,
                            ShipmentDestinationAddressRepository destinationAddressRepository, RouteRepository routeRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
                            WaybillRouteStatusRepository waybillRouteStatusRepository, EmployeeRepository employeeRepository) {
@@ -76,6 +77,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         this.deliveryPointRepository = deliveryPointRepository;
         this.paymentRepository = paymentRepository;
         this.parcelTypeRepository = parcelTypeRepository;
+        this.paymentTypeRepository = paymentTypeRepository;
 
         this.shipmentBoxRepository = shipmentBoxRepository;
         this.originDeliveryPointRepository = originDeliveryPointRepository;
@@ -142,16 +144,26 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         parcel = parcelRepository.save(parcel);
 
         Shipment shipment = new Shipment();
-        shipment.setTrackingNumber("59" + System.currentTimeMillis() / 1000);
         shipment.setParcel(parcel);
         shipment.setSender(clientRepository.getReferenceById(dto.senderId()));
         shipment.setRecipient(clientRepository.getReferenceById(dto.recipientId()));
         shipment.setShipmentType(typeRepository.getReferenceById(dto.shipmentTypeId()));
         shipment.setShipmentStatus(statusRepository.getReferenceById(1));
+        shipment.setSenderPay(dto.isSenderPay());
+        shipment.setPartiallyPaid(Boolean.TRUE.equals(dto.isPartiallyPaid()));
+        shipment.setCreatedBy(employeeRepository.getReferenceById(userId));
 
         CalculatedPriceResponseDto p = calculatePrices(new ShipmentPriceCalculationRequestDto(
-                dto.contentDescription(), dto.actualWeight(), dto.declaredValue(), dto.parcelTypeId(),
-                dto.storageConditionIds(), dto.boxVariantId(), dto.shipmentTypeId(), 0, 0));
+                dto.contentDescription(),
+                dto.actualWeight(),
+                dto.declaredValue(),
+                dto.parcelTypeId(),
+                dto.storageConditionIds(),
+                dto.boxVariantId(),
+                dto.shipmentTypeId(),
+                dto.origin() != null ? dto.origin().cityId() : null,
+                dto.destination() != null ? dto.destination().cityId() : null
+        ));
 
         Price price = new Price();
         price.setDelivery(p.deliveryPrice());
@@ -161,13 +173,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         price.setSpecialPackaging(p.specialPackagingPrice());
         price.setInsuranceFee(p.insuranceFee());
         price.setTotal(p.totalPrice());
-
         shipment.setPrice(price);
-
-        shipment.setSenderPay(dto.isSenderPay());
-        shipment.setPartiallyPaid(dto.isPartiallyPaid());
-        shipment.setCreatedAt(LocalDateTime.now());
-        shipment.setCreatedBy(employeeRepository.getReferenceById(userId));
 
         Shipment saved = shipmentRepository.save(shipment);
 
@@ -180,22 +186,109 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
             shipmentBoxRepository.save(sb);
         }
 
-        if (dto.isPartiallyPaid() && dto.partialAmount() != null) {
+        if (Boolean.TRUE.equals(dto.isFullyPaid()) && Boolean.TRUE.equals(dto.isSenderPay())) {
+            Payment payment = new Payment();
+            payment.setShipment(saved);
+            payment.setAmount(price.getTotal());
+            payment.setDate(LocalDateTime.now());
+            if (dto.paymentTypeId() != null) {
+                payment.setPaymentType(paymentTypeRepository.getReferenceById(dto.paymentTypeId()));
+            }
+            paymentRepository.save(payment);
+        } else if (Boolean.TRUE.equals(dto.isPartiallyPaid()) && dto.partialAmount() != null) {
             Payment payment = new Payment();
             payment.setShipment(saved);
             payment.setAmount(dto.partialAmount());
             payment.setDate(LocalDateTime.now());
-            payment.setTransactionNumber("PRE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            if (dto.paymentTypeId() != null) {
+                payment.setPaymentType(paymentTypeRepository.getReferenceById(dto.paymentTypeId()));
+            }
             paymentRepository.save(payment);
         }
 
         return mapper.toDto(saved);
     }
 
-    @Override
+    @Transactional
     @CacheEvict(value = {"shipmentPages", "shipmentStatistics", "shipmentMovements"}, allEntries = true)
-    public ShipmentDto update(Integer id, ShipmentDto dto) {
-        return super.update(id, dto);
+    public ShipmentDto updateComplexShipment(Integer id, CreateShipmentDto dto, Integer userId) {
+        Shipment shipment = shipmentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Відправлення не знайдено: " + id));
+
+        Parcel parcel = shipment.getParcel();
+        parcel.setActualWeight(dto.actualWeight());
+        parcel.setDeclaredValue(dto.declaredValue());
+        parcel.setContentDescription(dto.contentDescription());
+        parcel.setParcelType(parcelTypeRepository.getReferenceById(dto.parcelTypeId()));
+
+        if (dto.storageConditionIds() != null && !dto.storageConditionIds().isEmpty()) {
+            parcel.setStorageConditions(new HashSet<>(storageConditionRepository.findAllById(dto.storageConditionIds())));
+        } else {
+            parcel.setStorageConditions(new HashSet<>());
+        }
+        parcelRepository.save(parcel);
+
+        shipment.setSender(clientRepository.getReferenceById(dto.senderId()));
+        shipment.setRecipient(clientRepository.getReferenceById(dto.recipientId()));
+        shipment.setShipmentType(typeRepository.getReferenceById(dto.shipmentTypeId()));
+        shipment.setSenderPay(dto.isSenderPay());
+        shipment.setPartiallyPaid(Boolean.TRUE.equals(dto.isPartiallyPaid()));
+
+        CalculatedPriceResponseDto p = calculatePrices(new ShipmentPriceCalculationRequestDto(
+                dto.contentDescription(),
+                dto.actualWeight(),
+                dto.declaredValue(),
+                dto.parcelTypeId(),
+                dto.storageConditionIds(),
+                dto.boxVariantId(),
+                dto.shipmentTypeId(),
+                dto.origin() != null ? dto.origin().cityId() : null,
+                dto.destination() != null ? dto.destination().cityId() : null
+        ));
+
+        Price price = shipment.getPrice() != null ? shipment.getPrice() : new Price();
+        price.setDelivery(p.deliveryPrice());
+        price.setWeight(p.weightPrice());
+        price.setDistance(p.distancePrice());
+        price.setBoxVariant(p.boxVariantPrice());
+        price.setSpecialPackaging(p.specialPackagingPrice());
+        price.setInsuranceFee(p.insuranceFee());
+        price.setTotal(p.totalPrice());
+        shipment.setPrice(price);
+
+        shipmentRepository.save(shipment);
+
+        deleteExistingLocations(id);
+        saveBridgeLocations(shipment, dto.origin(), dto.destination());
+
+        shipmentBoxRepository.deleteByShipmentId(id);
+        if (dto.boxVariantId() != null) {
+            ShipmentBox sb = new ShipmentBox();
+            sb.setShipment(shipment);
+            sb.setBoxVariant(boxVariantRepository.getReferenceById(dto.boxVariantId()));
+            shipmentBoxRepository.save(sb);
+        }
+
+        paymentRepository.deleteByShipmentId(id);
+        if (Boolean.TRUE.equals(dto.isFullyPaid()) && Boolean.TRUE.equals(dto.isSenderPay())) {
+            Payment payment = new Payment();
+            payment.setShipment(shipment);
+            payment.setAmount(price.getTotal());
+            if (dto.paymentTypeId() != null) {
+                payment.setPaymentType(paymentTypeRepository.getReferenceById(dto.paymentTypeId()));
+            }
+            paymentRepository.save(payment);
+        } else if (Boolean.TRUE.equals(dto.isPartiallyPaid()) && dto.partialAmount() != null) {
+            Payment payment = new Payment();
+            payment.setShipment(shipment);
+            payment.setAmount(dto.partialAmount());
+            if (dto.paymentTypeId() != null) {
+                payment.setPaymentType(paymentTypeRepository.getReferenceById(dto.paymentTypeId()));
+            }
+            paymentRepository.save(payment);
+        }
+
+        return mapper.toDto(shipmentRepository.findById(id).orElseThrow());
     }
 
     @Transactional(readOnly = true)
@@ -467,6 +560,13 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                     newAddr.setApartmentNumber(apartmentNumber);
                     return addressRepository.save(newAddr);
                 });
+    }
+
+    private void deleteExistingLocations(Integer shipmentId) {
+        originDeliveryPointRepository.deleteByShipmentId(shipmentId);
+        destinationDeliveryPointRepository.deleteByShipmentId(shipmentId);
+        originAddressRepository.deleteByShipmentId(shipmentId);
+        destinationAddressRepository.deleteByShipmentId(shipmentId);
     }
 
     private BigDecimal defaultIfNull(BigDecimal value, BigDecimal defaultValue) {
