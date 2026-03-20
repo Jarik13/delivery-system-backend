@@ -93,6 +93,9 @@ public record ShipmentDto(
         @Schema(description = "Оголошена вартість")
         BigDecimal declaredValue,
 
+        @Schema(description = "ID способу оплати (з першого платежу)")
+        Integer paymentTypeId,
+
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String senderFullName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String recipientFullName,
         @Schema(accessMode = Schema.AccessMode.READ_ONLY) String parcelDescription,

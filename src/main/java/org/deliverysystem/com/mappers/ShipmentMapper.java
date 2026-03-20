@@ -67,6 +67,7 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(target = "destinationApartmentNumber", source = "entity", qualifiedByName = "resolveDestinationApartmentNumber")
     @Mapping(target = "partialAmount", source = "entity", qualifiedByName = "resolvePartialAmount")
     @Mapping(target = "declaredValue", source = "parcel.declaredValue")
+    @Mapping(target = "paymentTypeId", source = "entity", qualifiedByName = "resolvePaymentTypeId")
     @Mapping(source = "payments", target = "payments")
     @Mapping(source = "returns", target = "returns")
     ShipmentDto toDto(Shipment entity);
@@ -295,6 +296,13 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
             BigDecimal totalPaid = calculateTotalPaid(shipment);
             return totalPaid.compareTo(BigDecimal.ZERO) > 0 ? totalPaid : null;
         } catch (Exception e) { return null; }
+    }
+
+    @Named("resolvePaymentTypeId")
+    default Integer resolvePaymentTypeId(Shipment entity) {
+        if (entity.getPayments() == null || entity.getPayments().isEmpty()) return null;
+        Payment first = entity.getPayments().getFirst();
+        return first.getPaymentType() != null ? first.getPaymentType().getId() : null;
     }
 
     @Named("resolveBoxVariantName")
