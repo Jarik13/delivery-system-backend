@@ -9,6 +9,7 @@ import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
@@ -136,13 +137,13 @@ public abstract class WaybillMapper implements GenericMapper<Waybill, WaybillDto
     }
 
     @Named("mapTotalDistanceKm")
-    Float mapTotalDistanceKm(List<WaybillRoute> waybillRoutes) {
+    BigDecimal mapTotalDistanceKm(List<WaybillRoute> waybillRoutes) {
         if (waybillRoutes == null || waybillRoutes.isEmpty()) return null;
         double sum = waybillRoutes.stream()
                 .filter(wr -> wr.getRoute() != null && wr.getRoute().getDistanceKm() != null)
                 .mapToDouble(wr -> wr.getRoute().getDistanceKm())
                 .sum();
-        return sum > 0 ? (float) sum : null;
+        return sum > 0 ? BigDecimal.valueOf(sum) : null;
     }
 
     @Named("mapScheduledDeparture")

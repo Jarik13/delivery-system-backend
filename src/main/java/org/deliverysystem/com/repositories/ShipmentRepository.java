@@ -69,14 +69,18 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     @Query("SELECT s.shipmentType.id, COUNT(s) FROM Shipment s GROUP BY s.shipmentType.id")
     List<Object[]> countGroupByType();
 
-    @Query("SELECT s FROM Shipment s " +
-           "JOIN s.originDeliveryPoint sodp " +
-           "JOIN s.destinationDeliveryPoint sddp " +
-           "WHERE sodp.deliveryPoint.id = :originPointId " +
-           "AND sddp.deliveryPoint.id = :destPointId " +
-           "AND s.shipmentStatus.id IN (1, 2, 4) " +
-           "AND s.issuedAt IS NULL " +
-           "AND NOT EXISTS (SELECT sw FROM ShipmentWaybill sw WHERE sw.shipment = s)")
+    @Query(value = """
+            SELECT s.* FROM shipments s
+            JOIN shipment_origin_delivery_points sodp ON sodp.shipment_id = s.shipment_id
+            JOIN shipment_destination_delivery_points sddp ON sddp.shipment_id = s.shipment_id
+            WHERE sodp.delivery_point_id = :originPointId
+            AND sddp.delivery_point_id = :destPointId
+            AND s.shipment_status_id IN (1, 2, 4)
+            AND s.issued_at IS NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM shipment_waybills sw WHERE sw.shipment_id = s.shipment_id
+            )
+            """, nativeQuery = true)
     List<Shipment> findSuggestedShipments(Integer originPointId, Integer destPointId);
 
     @Query(value = """
