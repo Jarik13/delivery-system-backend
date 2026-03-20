@@ -12,6 +12,7 @@ public record EmployeeProfileDto(
             Integer id,
             Integer deliveryPointId,
             String name,
-            String address
+            String address,
+            Integer cityId
     ) {}
 }

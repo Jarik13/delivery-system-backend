@@ -32,7 +32,8 @@ public class EmployeeService extends AbstractBaseService<Employee, EmployeeDto, 
                     branch.getId(),
                     dp.getId(),
                     name + address,
-                    dp.getAddress()
+                    dp.getAddress(),
+                    dp.getCity() != null ? dp.getCity().getId() : null
             );
         }
 
