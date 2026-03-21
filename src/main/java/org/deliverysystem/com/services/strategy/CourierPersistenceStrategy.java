@@ -2,6 +2,7 @@ package org.deliverysystem.com.services.strategy;
 
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.users.CreateUserDto;
+import org.deliverysystem.com.dtos.users.UpdateProfileDto;
 import org.deliverysystem.com.dtos.users.UserDbDataDto;
 import org.deliverysystem.com.entities.Courier;
 import org.deliverysystem.com.enums.Role;
@@ -34,6 +35,14 @@ public class CourierPersistenceStrategy implements UserPersistenceStrategy {
     @Override
     public void delete(String keycloakId) {
         courierRepository.findByKeycloakId(keycloakId).ifPresent(courierRepository::delete);
+    }
+
+    @Override
+    public void updateProfile(String keycloakId, UpdateProfileDto dto) {
+        courierRepository.findByKeycloakId(keycloakId).ifPresent(c -> {
+            applyCommonFields(c, dto);
+            courierRepository.save(c);
+        });
     }
 
     @Override

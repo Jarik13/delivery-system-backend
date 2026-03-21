@@ -2,6 +2,7 @@ package org.deliverysystem.com.services.strategy;
 
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.users.CreateUserDto;
+import org.deliverysystem.com.dtos.users.UpdateProfileDto;
 import org.deliverysystem.com.dtos.users.UserDbDataDto;
 import org.deliverysystem.com.entities.SuperAdmin;
 import org.deliverysystem.com.enums.Role;
@@ -34,6 +35,14 @@ public class SuperAdminPersistenceStrategy implements UserPersistenceStrategy {
     @Override
     public void delete(String keycloakId) {
         superAdminRepository.findByKeycloakId(keycloakId).ifPresent(superAdminRepository::delete);
+    }
+
+    @Override
+    public void updateProfile(String keycloakId, UpdateProfileDto dto) {
+        superAdminRepository.findByKeycloakId(keycloakId).ifPresent(sa -> {
+            applyCommonFields(sa, dto);
+            superAdminRepository.save(sa);
+        });
     }
 
     @Override
