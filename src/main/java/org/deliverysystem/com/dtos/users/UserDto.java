@@ -29,5 +29,8 @@ public record UserDto(
         boolean emailVerified,
 
         @Schema(description = "ID відділення (тільки для EMPLOYEE)", example = "236")
-        Integer branchId
+        Integer branchId,
+
+        @Schema(description = "Номер ліцензії (тільки для DRIVER)")
+        String licenseNumber
 ) {}

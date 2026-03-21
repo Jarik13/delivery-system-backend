@@ -52,7 +52,7 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
                 return id;
             }
 
-            return new CurrentUserDto(id, roleStr);
+            return new CurrentUserDto(id, keycloakId, roleStr);
         } catch (Exception e) {
             return null;
         }
