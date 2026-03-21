@@ -114,7 +114,8 @@ public class KeycloakAdminService {
                             phoneNumber,
                             roleName,
                             Boolean.TRUE.equals(u.isEmailVerified()),
-                            branchId
+                            branchId,
+                            null
                     );
                 })
                 .toList();
@@ -144,5 +145,42 @@ public class KeycloakAdminService {
                 .get(newRole.name())
                 .toRepresentation();
         realmResource.users().get(keycloakId).roles().realmLevel().add(List.of(roleRep));
+    }
+
+    public UserDto getUserByKeycloakId(String keycloakId) {
+        RealmResource realmResource = getKeycloak().realm(realm);
+        UserRepresentation u = realmResource.users().get(keycloakId).toRepresentation();
+
+        String roleName = realmResource.users().get(keycloakId)
+                .roles().realmLevel().listEffective().stream()
+                .map(RoleRepresentation::getName)
+                .filter(SYSTEM_ROLES::contains)
+                .findFirst()
+                .orElse("NONE");
+
+        String middleName = null, phoneNumber = null, licenseNumber = null;
+        Integer branchId = null;
+
+        if (!roleName.equals("NONE")) {
+            var dbData = strategyRegistry.getStrategy(Role.valueOf(roleName)).findByKeycloakId(keycloakId).orElse(null);
+            if (dbData != null) {
+                middleName = dbData.middleName();
+                phoneNumber = dbData.phoneNumber();
+                branchId = dbData.branchId();
+                licenseNumber = dbData.licenseNumber();
+            }
+        }
+
+        return new UserDto(u.getId(), u.getEmail(), u.getFirstName(), u.getLastName(),
+                middleName, phoneNumber, roleName, Boolean.TRUE.equals(u.isEmailVerified()),
+                branchId, licenseNumber);
+    }
+
+    public void updateUserNames(String keycloakId, String firstName, String lastName) {
+        RealmResource realmResource = getKeycloak().realm(realm);
+        UserRepresentation u = realmResource.users().get(keycloakId).toRepresentation();
+        if (firstName != null) u.setFirstName(firstName);
+        if (lastName != null) u.setLastName(lastName);
+        realmResource.users().get(keycloakId).update(u);
     }
 }

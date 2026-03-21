@@ -2,6 +2,7 @@ package org.deliverysystem.com.services.strategy;
 
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.users.CreateUserDto;
+import org.deliverysystem.com.dtos.users.UpdateProfileDto;
 import org.deliverysystem.com.dtos.users.UserDbDataDto;
 import org.deliverysystem.com.entities.Driver;
 import org.deliverysystem.com.enums.Role;
@@ -31,6 +32,15 @@ public class DriverPersistenceStrategy implements UserPersistenceStrategy {
     @Override
     public void delete(String keycloakId) {
         driverRepository.findByKeycloakId(keycloakId).ifPresent(driverRepository::delete);
+    }
+
+    @Override
+    public void updateProfile(String keycloakId, UpdateProfileDto dto) {
+        driverRepository.findByKeycloakId(keycloakId).ifPresent(d -> {
+            applyCommonFields(d, dto);
+            if (dto.licenseNumber() != null) d.setLicenseNumber(dto.licenseNumber());
+            driverRepository.save(d);
+        });
     }
 
     @Override

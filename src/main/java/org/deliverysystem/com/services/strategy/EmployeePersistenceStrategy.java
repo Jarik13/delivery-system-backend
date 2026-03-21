@@ -3,6 +3,7 @@ package org.deliverysystem.com.services.strategy;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.dtos.users.CreateUserDto;
+import org.deliverysystem.com.dtos.users.UpdateProfileDto;
 import org.deliverysystem.com.dtos.users.UserDbDataDto;
 import org.deliverysystem.com.entities.Employee;
 import org.deliverysystem.com.enums.Role;
@@ -40,6 +41,14 @@ public class EmployeePersistenceStrategy implements UserPersistenceStrategy, Bra
     @Override
     public void delete(String keycloakId) {
         employeeRepository.findByKeycloakId(keycloakId).ifPresent(employeeRepository::delete);
+    }
+
+    @Override
+    public void updateProfile(String keycloakId, UpdateProfileDto dto) {
+        employeeRepository.findByKeycloakId(keycloakId).ifPresent(e -> {
+            applyCommonFields(e, dto);
+            employeeRepository.save(e);
+        });
     }
 
     @Override

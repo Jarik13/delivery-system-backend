@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.deliverysystem.com.annotations.Auditable;
 import org.deliverysystem.com.dtos.users.CreateUserDto;
+import org.deliverysystem.com.dtos.users.UpdateProfileDto;
 import org.deliverysystem.com.dtos.users.UserDto;
 import org.deliverysystem.com.enums.Role;
 import org.deliverysystem.com.services.BranchAssignable;
@@ -36,7 +37,7 @@ public class UserServiceImpl implements UserService {
                 keycloakId, dto.email(),
                 dto.firstName(), dto.lastName(),
                 dto.middleName(), dto.phoneNumber(),
-                dto.role().name(), false, dto.branchId()
+                dto.role().name(), false, dto.branchId(), null
         );
     }
 
@@ -78,6 +79,21 @@ public class UserServiceImpl implements UserService {
 
         branchAssignable.updateBranch(keycloakId, branchId);
         log.info("Branch updated: keycloakId={}, branchId={}", keycloakId, branchId);
+    }
+
+    @Override
+    @Auditable(action = "UPDATE_PROFILE")
+    @Transactional
+    public UserDto updateProfile(String keycloakId, String role, UpdateProfileDto dto) {
+        keycloakAdminService.updateUserNames(keycloakId, dto.firstName(), dto.lastName());
+        strategyRegistry.getStrategy(Role.valueOf(role)).updateProfile(keycloakId, dto);
+        log.info("Profile updated: keycloakId={}", keycloakId);
+        return keycloakAdminService.getUserByKeycloakId(keycloakId);
+    }
+
+    @Override
+    public UserDto getProfile(String keycloakId) {
+        return keycloakAdminService.getUserByKeycloakId(keycloakId);
     }
 
     @Override

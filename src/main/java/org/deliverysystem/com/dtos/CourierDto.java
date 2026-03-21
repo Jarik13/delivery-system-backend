@@ -23,5 +23,8 @@ public record CourierDto(
         @NotBlank
         @Pattern(regexp = "^\\+380\\d{9}$", message = "Формат телефону: +380xxxxxxxxx")
         @Schema(description = "Телефон", example = "+380501234567")
-        String phoneNumber
+        String phoneNumber,
+
+        @Schema(description = "Чи має кур'єр активний маршрутний лист")
+        Boolean hasActiveRouteList
 ) {}
