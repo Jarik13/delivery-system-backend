@@ -17,7 +17,9 @@ import org.keycloak.OAuth2Constants;
 
 import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -182,5 +184,18 @@ public class KeycloakAdminService {
         if (firstName != null) u.setFirstName(firstName);
         if (lastName != null) u.setLastName(lastName);
         realmResource.users().get(keycloakId).update(u);
+    }
+
+    public Map<String, List<String>> getRoleAttributes(String roleName) {
+        RoleRepresentation role = getKeycloak().realm(realm)
+                .roles().get(roleName).toRepresentation();
+        return role.getAttributes() != null ? role.getAttributes() : new HashMap<>();
+    }
+
+    public void updateRoleAttributes(String roleName, Map<String, List<String>> attributes) {
+        var rolesResource = getKeycloak().realm(realm).roles();
+        RoleRepresentation role = rolesResource.get(roleName).toRepresentation();
+        role.setAttributes(attributes);
+        rolesResource.get(roleName).update(role);
     }
 }
