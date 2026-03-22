@@ -94,7 +94,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/storage-conditions/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/storage-conditions/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/return-reasons/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/return-reasons/**").hasAnyRole("EMPLOYEE", "COURIER", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/return-reasons/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/return-reasons/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/return-reasons/**").hasRole("ADMIN")
@@ -109,7 +109,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/branch-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/branch-types/**").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/v1/payment-types/**").hasAnyRole("EMPLOYEE", "DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/payment-types/**").hasAnyRole("EMPLOYEE", "COURIER", "DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/payment-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/payment-types/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/payment-types/**").hasRole("ADMIN")
@@ -160,8 +160,8 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/v1/shipments/**").hasAnyRole("EMPLOYEE", "DRIVER")
                         .requestMatchers("/api/v1/parcels/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers("/api/v1/payments/**").hasAnyRole("EMPLOYEE", "DRIVER")
-                        .requestMatchers("/api/v1/returns/**").hasAnyRole("EMPLOYEE", "DRIVER")
+                        .requestMatchers("/api/v1/payments/**").hasAnyRole("EMPLOYEE", "COURIER", "DRIVER")
+                        .requestMatchers("/api/v1/returns/**").hasAnyRole("EMPLOYEE", "COURIER", "DRIVER")
                         .requestMatchers("/api/v1/postomats/**").hasAnyRole("EMPLOYEE", "DRIVER")
                         .requestMatchers("/api/v1/streets/**").hasAnyRole("EMPLOYEE", "DRIVER")
                         .requestMatchers("/api/v1/address-houses/**").hasAnyRole("EMPLOYEE", "DRIVER")

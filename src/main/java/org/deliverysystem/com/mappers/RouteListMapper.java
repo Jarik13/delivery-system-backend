@@ -10,6 +10,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
+import java.math.BigDecimal;
+
 @Mapper(componentModel = "spring")
 public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> {
     @Override
@@ -21,6 +23,7 @@ public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> 
     RouteListDto toDto(RouteList entity);
 
     @Mapping(source = "id", target = "id")
+    @Mapping(source = "shipment.id", target = "shipmentId")
     @Mapping(source = "shipment.trackingNumber", target = "trackingNumber")
     @Mapping(target = "recipientFullName", expression = "java(formatName(item.getShipment().getRecipient().getLastName(), item.getShipment().getRecipient().getFirstName(), item.getShipment().getRecipient().getMiddleName()))")
     @Mapping(source = "shipment.recipient.phoneNumber", target = "recipientPhone")
@@ -29,6 +32,10 @@ public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> 
     @Mapping(source = "shipment.price.total", target = "codAmount")
     @Mapping(source = "delivered", target = "isDelivered")
     @Mapping(source = "deliveredAt", target = "deliveredAt")
+    @Mapping(source = "shipment.shipmentStatus.name", target = "shipmentStatusName")
+    @Mapping(source = "shipment.price.total", target = "totalPrice")
+    @Mapping(target = "hasCod", expression = "java(resolveHasCod(item.getShipment()))")
+    @Mapping(target = "remainingAmount", expression = "java(resolveRemainingAmount(item.getShipment()))")
     RouteSheetItemDto toItemDto(RouteSheetItem item);
 
     @Named("mapFullAddress")
@@ -58,6 +65,31 @@ public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> 
         if (first != null) sb.append(first).append(" ");
         if (middle != null) sb.append(middle);
         return sb.toString().trim();
+    }
+
+    default Boolean resolveHasCod(Shipment shipment) {
+        try {
+            return shipment.getPayments() == null || shipment.getPayments().isEmpty()
+                    ? shipment.getPrice().getTotal().compareTo(BigDecimal.ZERO) > 0
+                    : resolveRemainingAmount(shipment).compareTo(BigDecimal.ZERO) > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    default BigDecimal resolveRemainingAmount(Shipment shipment) {
+        try {
+            BigDecimal total = shipment.getPrice().getTotal();
+            BigDecimal paid = shipment.getPayments() == null
+                    ? BigDecimal.ZERO
+                    : shipment.getPayments().stream()
+                    .map(p -> p.getAmount() != null ? p.getAmount() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal remaining = total.subtract(paid);
+            return remaining.compareTo(BigDecimal.ZERO) > 0 ? remaining : BigDecimal.ZERO;
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
     }
 
     @Override

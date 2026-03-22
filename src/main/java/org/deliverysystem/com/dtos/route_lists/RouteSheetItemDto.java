@@ -31,5 +31,20 @@ public record RouteSheetItemDto(
         boolean isDelivered,
 
         @Schema(description = "Час фактичної доставки")
-        LocalDateTime deliveredAt
+        LocalDateTime deliveredAt,
+
+        @Schema(description = "ID відправлення")
+        Integer shipmentId,
+
+        @Schema(description = "Статус відправлення")
+        String shipmentStatusName,
+
+        @Schema(description = "Чи є борг по оплаті")
+        Boolean hasCod,
+
+        @Schema(description = "Сума залишку до оплати")
+        BigDecimal remainingAmount,
+
+        @Schema(description = "Загальна вартість відправлення")
+        BigDecimal totalPrice
 ) {}
