@@ -29,7 +29,7 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .where(SpecificationUtils.<AuditLog>in("action", criteria.actions()))
                 .and(SpecificationUtils.iLike("performedBy", criteria.performedBy()))
                 .and(SpecificationUtils.iLike("target", criteria.target()))
-                .and(SpecificationUtils.<AuditLog>in("status", criteria.statuses()))
+                .and(SpecificationUtils.in("status", criteria.statuses()))
                 .and(SpecificationUtils.gte("performedAt", criteria.performedAtFrom()))
                 .and(SpecificationUtils.lte("performedAt", criteria.performedAtTo()));
 
