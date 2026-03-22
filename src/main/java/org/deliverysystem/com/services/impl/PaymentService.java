@@ -1,15 +1,21 @@
 package org.deliverysystem.com.services.impl;
 
+import jakarta.persistence.EntityNotFoundException;
+import org.deliverysystem.com.dtos.payments.CreatePaymentDto;
 import org.deliverysystem.com.dtos.payments.PaymentDto;
 import org.deliverysystem.com.dtos.payments.PaymentStatisticDto;
 import org.deliverysystem.com.dtos.search.PaymentSearchCriteria;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.Payment;
+import org.deliverysystem.com.entities.Shipment;
 import org.deliverysystem.com.mappers.PaymentMapper;
 import org.deliverysystem.com.repositories.EmployeeRepository;
 import org.deliverysystem.com.repositories.PaymentRepository;
+import org.deliverysystem.com.repositories.PaymentTypeRepository;
+import org.deliverysystem.com.repositories.ShipmentRepository;
 import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,11 +28,33 @@ import java.math.BigDecimal;
 public class PaymentService extends AbstractBaseService<Payment, PaymentDto, Integer> {
     private final PaymentRepository paymentRepository;
     private final EmployeeRepository employeeRepository;
+    private final ShipmentRepository shipmentRepository;
+    private final PaymentTypeRepository paymentTypeRepository;
 
-    public PaymentService(PaymentRepository paymentRepository, PaymentMapper mapper, EmployeeRepository employeeRepository) {
+    public PaymentService(PaymentRepository paymentRepository, PaymentMapper mapper,
+                          EmployeeRepository employeeRepository,
+                          ShipmentRepository shipmentRepository,
+                          PaymentTypeRepository paymentTypeRepository) {
         super(mapper, paymentRepository);
         this.paymentRepository = paymentRepository;
         this.employeeRepository = employeeRepository;
+        this.shipmentRepository = shipmentRepository;
+        this.paymentTypeRepository = paymentTypeRepository;
+    }
+
+    @Transactional
+    @CacheEvict(value = {"paymentStatistics", "shipmentPages"}, allEntries = true)
+    public PaymentDto createPayment(CreatePaymentDto dto) {
+        Shipment shipment = shipmentRepository.findById(dto.shipmentId())
+                .orElseThrow(() -> new EntityNotFoundException("Відправлення не знайдено: " + dto.shipmentId()));
+
+        Payment payment = new Payment();
+        payment.setShipment(shipment);
+        payment.setAmount(dto.amount());
+        payment.setPaymentType(paymentTypeRepository.findById(dto.paymentTypeId())
+                .orElseThrow(() -> new EntityNotFoundException("Тип оплати не знайдено: " + dto.paymentTypeId())));
+
+        return mapper.toDto(paymentRepository.save(payment));
     }
 
     @Transactional(readOnly = true)
