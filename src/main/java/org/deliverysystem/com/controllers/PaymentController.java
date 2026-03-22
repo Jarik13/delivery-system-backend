@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.annotations.CurrentUser;
+import org.deliverysystem.com.dtos.payments.CreatePaymentDto;
 import org.deliverysystem.com.dtos.payments.PaymentDto;
 import org.deliverysystem.com.dtos.payments.PaymentStatisticDto;
 import org.deliverysystem.com.dtos.search.PaymentSearchCriteria;
@@ -46,10 +47,10 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.findById(id));
     }
 
-    @Operation(summary = "Створити платіж")
+    @Operation(summary = "Оформити платіж для відправлення")
     @PostMapping
-    public ResponseEntity<PaymentDto> create(@Valid @RequestBody PaymentDto dto) {
-        return new ResponseEntity<>(paymentService.create(dto), HttpStatus.CREATED);
+    public ResponseEntity<PaymentDto> createPayment(@Valid @RequestBody CreatePaymentDto dto) {
+        return new ResponseEntity<>(paymentService.createPayment(dto), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Оновити платіж")
