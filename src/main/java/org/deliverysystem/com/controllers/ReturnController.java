@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.returns.CreateReturnDto;
+import org.deliverysystem.com.dtos.returns.CreateReturnResponseDto;
 import org.deliverysystem.com.dtos.returns.ReturnDto;
 import org.deliverysystem.com.dtos.returns.ReturnStatisticsDto;
 import org.deliverysystem.com.dtos.search.ReturnSearchCriteria;
@@ -42,7 +43,7 @@ public class ReturnController {
 
     @PostMapping
     @Operation(summary = "Оформити повернення")
-    public ResponseEntity<ReturnDto> create(@Valid @RequestBody CreateReturnDto dto) {
+    public ResponseEntity<CreateReturnResponseDto> create(@Valid @RequestBody CreateReturnDto dto) {
         return ResponseEntity.ok(returnService.create(dto));
     }
 }

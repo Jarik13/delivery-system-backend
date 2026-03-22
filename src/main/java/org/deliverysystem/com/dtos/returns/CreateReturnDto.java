@@ -15,7 +15,7 @@ public record CreateReturnDto(
         @Schema(description = "ID причини повернення", example = "2")
         Integer returnReasonId,
 
-        @Positive
+        @Positive(message = "Сума повернення має бути більше 0")
         @Schema(description = "Сума до повернення", example = "500.00")
         BigDecimal refundAmount
 ) {}

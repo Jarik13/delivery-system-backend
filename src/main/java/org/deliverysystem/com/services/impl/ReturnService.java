@@ -2,6 +2,7 @@ package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.deliverysystem.com.dtos.returns.CreateReturnDto;
+import org.deliverysystem.com.dtos.returns.CreateReturnResponseDto;
 import org.deliverysystem.com.dtos.returns.ReturnDto;
 import org.deliverysystem.com.dtos.returns.ReturnStatisticsDto;
 import org.deliverysystem.com.dtos.search.ReturnSearchCriteria;
@@ -57,7 +58,7 @@ public class ReturnService extends AbstractBaseService<Return, ReturnDto, Intege
 
     @Transactional
     @CacheEvict(value = {"returnPages", "returnStatistics", "shipmentPages"}, allEntries = true)
-    public ReturnDto create(CreateReturnDto dto) {
+    public CreateReturnResponseDto create(CreateReturnDto dto) {
         Shipment original = shipmentRepository.findById(dto.shipmentId())
                 .orElseThrow(() -> new EntityNotFoundException("Відправлення не знайдено: " + dto.shipmentId()));
 
@@ -98,7 +99,10 @@ public class ReturnService extends AbstractBaseService<Return, ReturnDto, Intege
         ret.setReturnReason(reason);
         ret.setRefundAmount(refund);
 
-        return mapper.toDto(returnRepository.save(ret));
+        return new CreateReturnResponseDto(
+                mapper.toDto(returnRepository.save(ret)),
+                savedReturn.getTrackingNumber()
+        );
     }
 
     @Transactional(readOnly = true)
