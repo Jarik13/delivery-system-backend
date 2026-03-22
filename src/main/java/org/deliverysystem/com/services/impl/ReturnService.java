@@ -1,15 +1,22 @@
 package org.deliverysystem.com.services.impl;
 
+import jakarta.persistence.EntityNotFoundException;
+import org.deliverysystem.com.dtos.returns.CreateReturnDto;
 import org.deliverysystem.com.dtos.returns.ReturnDto;
 import org.deliverysystem.com.dtos.returns.ReturnStatisticsDto;
 import org.deliverysystem.com.dtos.search.ReturnSearchCriteria;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.Return;
+import org.deliverysystem.com.entities.ReturnReason;
+import org.deliverysystem.com.entities.Shipment;
 import org.deliverysystem.com.mappers.ReturnMapper;
 import org.deliverysystem.com.repositories.EmployeeRepository;
+import org.deliverysystem.com.repositories.ReturnReasonRepository;
 import org.deliverysystem.com.repositories.ReturnRepository;
+import org.deliverysystem.com.repositories.ShipmentRepository;
 import org.deliverysystem.com.utils.RestPage;
 import org.deliverysystem.com.utils.SpecificationUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -19,12 +26,33 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ReturnService extends AbstractBaseService<Return, ReturnDto, Integer> {
     private final ReturnRepository returnRepository;
+    private final ShipmentRepository shipmentRepository;
+    private final ReturnReasonRepository returnReasonRepository;
     private final EmployeeRepository employeeRepository;
 
-    public ReturnService(ReturnRepository repository, ReturnMapper mapper, EmployeeRepository employeeRepository) {
+    public ReturnService(ReturnRepository repository, ReturnMapper mapper, ShipmentRepository shipmentRepository, ReturnReasonRepository returnReasonRepository, EmployeeRepository employeeRepository) {
         super(mapper, repository);
         this.returnRepository = repository;
+        this.shipmentRepository = shipmentRepository;
+        this.returnReasonRepository = returnReasonRepository;
         this.employeeRepository = employeeRepository;
+    }
+
+    @Transactional
+    @CacheEvict(value = {"returnPages", "returnStatistics"}, allEntries = true)
+    public ReturnDto create(CreateReturnDto dto) {
+        Shipment shipment = shipmentRepository.findById(dto.shipmentId())
+                .orElseThrow(() -> new EntityNotFoundException("Відправлення не знайдено: " + dto.shipmentId()));
+
+        ReturnReason reason = returnReasonRepository.findById(dto.returnReasonId())
+                .orElseThrow(() -> new EntityNotFoundException("Причина повернення не знайдена: " + dto.returnReasonId()));
+
+        Return ret = new Return();
+        ret.setShipment(shipment);
+        ret.setReturnReason(reason);
+        ret.setRefundAmount(dto.refundAmount() != null ? dto.refundAmount() : shipment.getPrice().getTotal());
+
+        return mapper.toDto(returnRepository.save(ret));
     }
 
     @Transactional(readOnly = true)
