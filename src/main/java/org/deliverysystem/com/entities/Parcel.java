@@ -30,6 +30,9 @@ public class Parcel {
     @Column(name = "parcel_content_description")
     private String contentDescription;
 
+    @OneToOne(mappedBy = "parcel")
+    private Shipment shipment;
+
     @ManyToOne
     @JoinColumn(name = "parcel_type_id")
     private ParcelType parcelType;

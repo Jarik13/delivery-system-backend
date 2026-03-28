@@ -5,9 +5,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.parcels.ParcelDto;
 import org.deliverysystem.com.dtos.parcels.ParcelStatisticsDto;
 import org.deliverysystem.com.dtos.search.ParcelSearchCriteria;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.services.impl.ParcelService;
 import org.deliverysystem.com.utils.RestPage;
 import org.springdoc.core.annotations.ParameterObject;
@@ -27,9 +29,10 @@ public class ParcelController {
     @GetMapping
     public ResponseEntity<RestPage<ParcelDto>> getAll(
             @ParameterObject ParcelSearchCriteria criteria,
-            @ParameterObject Pageable pageable
+            @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserDto user
     ) {
-        return ResponseEntity.ok(parcelService.findAll(criteria, pageable));
+        return ResponseEntity.ok(parcelService.findAll(criteria, pageable, user));
     }
 
     @Operation(summary = "Отримати статистику по посилках (мін/макс значення)")
