@@ -35,6 +35,12 @@ public class ParcelController {
         return ResponseEntity.ok(parcelService.findAll(criteria, pageable, user));
     }
 
+    @Operation(summary = "Посилки без прив'язаного відправлення")
+    @GetMapping("/unshipped")
+    public ResponseEntity<RestPage<ParcelDto>> getUnshipped(@ParameterObject Pageable pageable) {
+        return ResponseEntity.ok(parcelService.findUnshipped(pageable));
+    }
+
     @Operation(summary = "Отримати статистику по посилках (мін/макс значення)")
     @GetMapping("/statistics")
     public ResponseEntity<ParcelStatisticsDto> getStatistics() {

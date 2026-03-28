@@ -91,6 +91,11 @@ public class ParcelService extends AbstractBaseService<Parcel, ParcelDto, Intege
     }
 
     @Transactional(readOnly = true)
+    public RestPage<ParcelDto> findUnshipped(Pageable pageable) {
+        return new RestPage<>(parcelRepository.findUnshipped(pageable).map(mapper::toDto));
+    }
+
+    @Transactional(readOnly = true)
     @Cacheable(value = "parcelStatistics", key = "'global'")
     public ParcelStatisticsDto getStatistics() {
         BigDecimal minWeight = parcelRepository.findMinWeight();
