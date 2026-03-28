@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.search.WaybillSearchCriteria;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
@@ -25,15 +26,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/waybills")
 @Tag(name = "Waybills", description = "Транспортні накладні")
+@RequiredArgsConstructor
 public class WaybillController {
     private final WaybillService waybillService;
     private final WaybillExportContext exportContext;
-
-    public WaybillController(WaybillService waybillService,
-                             WaybillExportContext exportContext) {
-        this.waybillService = waybillService;
-        this.exportContext = exportContext;
-    }
 
     @Operation(summary = "Отримати накладні з фільтрацією та пагінацією")
     @GetMapping

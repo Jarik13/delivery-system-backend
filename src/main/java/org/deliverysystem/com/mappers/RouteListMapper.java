@@ -40,23 +40,36 @@ public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> 
 
     @Named("mapFullAddress")
     default String mapFullAddress(Shipment shipment) {
-        if (shipment.getDestinationAddress() == null) return "Самовивіз з відділення";
-
-        var addr = shipment.getDestinationAddress();
-        var house = addr.getAddress().getHouse();
-        var street = house.getStreet();
-        var city = street.getCity();
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(city.getName()).append(", ");
-        sb.append(street.getName()).append(", ");
-        sb.append("буд. ").append(house.getNumber());
-
-        if (addr.getAddress().getApartmentNumber() != null) {
-            sb.append(", кв. ").append(addr.getAddress().getApartmentNumber());
+        if (shipment.getDestinationAddress() != null) {
+            try {
+                var addr   = shipment.getDestinationAddress();
+                var house  = addr.getAddress().getHouse();
+                var street = house.getStreet();
+                var city   = street.getCity();
+                StringBuilder sb = new StringBuilder();
+                sb.append(city.getName()).append(", ");
+                sb.append(street.getName()).append(", ");
+                sb.append("буд. ").append(house.getNumber());
+                if (addr.getAddress().getApartmentNumber() != null)
+                    sb.append(", кв. ").append(addr.getAddress().getApartmentNumber());
+                return sb.toString();
+            } catch (Exception e) { return null; }
         }
 
-        return sb.toString();
+        if (shipment.getDestinationDeliveryPoint() != null) {
+            try {
+                var dp = shipment.getDestinationDeliveryPoint().getDeliveryPoint();
+                StringBuilder sb = new StringBuilder();
+                if (dp.getCity() != null)
+                    sb.append(dp.getCity().getName()).append(", ");
+                if (dp.getName() != null)
+                    sb.append(dp.getName());
+                if (dp.getAddress() != null)
+                    sb.append(", ").append(dp.getAddress());
+                return sb.toString();
+            } catch (Exception e) { return null; }
+        }
+        return null;
     }
 
     default String formatName(String last, String first, String middle) {
