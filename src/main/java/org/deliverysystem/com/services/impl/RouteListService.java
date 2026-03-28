@@ -1,6 +1,7 @@
 package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.deliverysystem.com.dtos.route_lists.AddShipmentsToRouteListDto;
 import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListDto;
 import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
@@ -57,51 +58,24 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
 
     @Transactional
     public RouteListDto createRouteList(CreateRouteListDto dto) {
-        List<Shipment> shipments = shipmentRepository.findAllById(dto.shipmentIds());
-
-        if (shipments.size() != dto.shipmentIds().size()) {
-            List<Integer> foundIds = shipments.stream().map(Shipment::getId).toList();
-            List<Integer> missing = dto.shipmentIds().stream()
-                    .filter(id -> !foundIds.contains(id))
-                    .toList();
-            throw new BusinessValidationException("shipmentIds", "Відправлення не знайдено: " + missing);
-        }
-
-        BigDecimal totalWeight = shipments.stream()
-                .map(s -> s.getParcel() != null && s.getParcel().getActualWeight() != null
-                        ? s.getParcel().getActualWeight()
-                        : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (totalWeight.compareTo(new BigDecimal("100.0")) > 0) {
-            throw new BusinessValidationException("shipmentIds",
-                    "Сумарна вага відправлень перевищує 30 кг (" +
-                    totalWeight.setScale(2, RoundingMode.HALF_UP) + " кг)");
-        }
+        List<Shipment> shipments = resolveAndValidateShipments(dto.shipmentIds());
+        BigDecimal totalWeight = calculateTotalWeight(shipments);
 
         Courier courier = courierRepository.findById(dto.courierId())
-                .orElseThrow(() -> new BusinessValidationException("courierId", "Кур'єра з ID " + dto.courierId() + " не знайдено"));
+                .orElseThrow(() -> new BusinessValidationException("courierId",
+                        "Кур'єра з ID " + dto.courierId() + " не знайдено"));
 
-        RouteListStatus status = routeListStatusRepository.findByName("Сформовано").orElseThrow(() -> new IllegalStateException("Статус 'Сформовано' не знайдено в БД"));
+        RouteListStatus status = routeListStatusRepository.findByName("Сформовано")
+                .orElseThrow(() -> new IllegalStateException("Статус 'Сформовано' не знайдено в БД"));
 
         RouteList routeList = new RouteList();
         routeList.setCourier(courier);
         routeList.setStatus(status);
         routeList.setTotalWeight(totalWeight);
         routeList.setPlannedDepartureTime(dto.plannedDepartureTime());
+        routeList.setRouteSheetItems(buildRouteSheetItems(shipments, routeList));
 
-        List<RouteSheetItem> items = shipments.stream().map(shipment -> {
-            RouteSheetItem item = new RouteSheetItem();
-            item.setRouteList(routeList);
-            item.setShipment(shipment);
-            item.setDelivered(false);
-            return item;
-        }).toList();
-
-        routeList.setRouteSheetItems(new ArrayList<>(items));
-
-        RouteList saved = routeListRepository.save(routeList);
-        return routeListMapper.toDto(saved);
+        return routeListMapper.toDto(routeListRepository.save(routeList));
     }
 
     @Transactional(readOnly = true)
@@ -193,6 +167,55 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         updateRouteListStatus(item.getRouteList());
     }
 
+    @Transactional
+    @CacheEvict(value = {"routeListPages", "routeListStatistics"}, allEntries = true)
+    public RouteListDto addShipments(Integer id, AddShipmentsToRouteListDto dto) {
+        RouteList routeList = routeListRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Маршрутний лист не знайдено: " + id));
+
+        List<Integer> existingShipmentIds = routeList.getRouteSheetItems().stream()
+                .map(item -> item.getShipment().getId())
+                .toList();
+
+        List<Integer> newIds = dto.shipmentIds().stream()
+                .filter(sid -> !existingShipmentIds.contains(sid))
+                .toList();
+
+        if (newIds.isEmpty()) {
+            return routeListMapper.toDto(routeList);
+        }
+
+        List<Shipment> newShipments = resolveAndValidateShipments(newIds);
+
+        BigDecimal existingWeight = routeList.getTotalWeight() != null ? routeList.getTotalWeight() : BigDecimal.ZERO;
+        BigDecimal newWeight = newShipments.stream()
+                .map(s -> s.getParcel() != null && s.getParcel().getActualWeight() != null ? s.getParcel().getActualWeight() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalWeight = existingWeight.add(newWeight);
+
+        if (totalWeight.compareTo(new BigDecimal("100.0")) > 0) {
+            throw new BusinessValidationException("shipmentIds", "Сумарна вага перевищує 100 кг (" + totalWeight.setScale(2, RoundingMode.HALF_UP) + " кг)");
+        }
+
+        int totalCount = routeList.getRouteSheetItems().size() + newShipments.size();
+        if (totalCount > 13) {
+            throw new BusinessValidationException("shipmentIds", "Кількість відправлень перевищує 13 (" + totalCount + ")");
+        }
+
+        List<RouteSheetItem> newItems = newShipments.stream().map(shipment -> {
+            RouteSheetItem item = new RouteSheetItem();
+            item.setRouteList(routeList);
+            item.setShipment(shipment);
+            item.setDelivered(false);
+            return item;
+        }).toList();
+
+        routeList.getRouteSheetItems().addAll(newItems);
+        routeList.setTotalWeight(totalWeight);
+
+        return routeListMapper.toDto(routeListRepository.save(routeList));
+    }
+
     private void updateRouteListStatus(RouteList routeList) {
         List<RouteSheetItem> items = routeList.getRouteSheetItems();
         long total = items.size();
@@ -215,5 +238,42 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         RouteListStatus status = routeListStatusRepository.findByName(newStatusName).orElseThrow();
         routeList.setStatus(status);
         routeListRepository.save(routeList);
+    }
+
+    private List<Shipment> resolveAndValidateShipments(List<Integer> shipmentIds) {
+        List<Shipment> shipments = shipmentRepository.findAllById(shipmentIds);
+
+        if (shipments.size() != shipmentIds.size()) {
+            List<Integer> foundIds = shipments.stream().map(Shipment::getId).toList();
+            List<Integer> missing = shipmentIds.stream()
+                    .filter(id -> !foundIds.contains(id)).toList();
+            throw new BusinessValidationException("shipmentIds", "Відправлення не знайдено: " + missing);
+        }
+        return shipments;
+    }
+
+    private BigDecimal calculateTotalWeight(List<Shipment> shipments) {
+        BigDecimal totalWeight = shipments.stream()
+                .map(s -> s.getParcel() != null && s.getParcel().getActualWeight() != null
+                        ? s.getParcel().getActualWeight()
+                        : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (totalWeight.compareTo(new BigDecimal("100.0")) > 0) {
+            throw new BusinessValidationException("shipmentIds",
+                    "Сумарна вага перевищує 100 кг (" +
+                    totalWeight.setScale(2, RoundingMode.HALF_UP) + " кг)");
+        }
+        return totalWeight;
+    }
+
+    private ArrayList<RouteSheetItem> buildRouteSheetItems(List<Shipment> shipments, RouteList routeList) {
+        return shipments.stream().map(shipment -> {
+            RouteSheetItem item = new RouteSheetItem();
+            item.setRouteList(routeList);
+            item.setShipment(shipment);
+            item.setDelivered(false);
+            return item;
+        }).collect(Collectors.toCollection(ArrayList::new));
     }
 }

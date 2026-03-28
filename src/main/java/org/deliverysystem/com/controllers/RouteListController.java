@@ -6,10 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.annotations.CurrentUser;
-import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
-import org.deliverysystem.com.dtos.route_lists.RouteListDto;
-import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
-import org.deliverysystem.com.dtos.route_lists.UpdateShipmentDeliveryStatusDto;
+import org.deliverysystem.com.dtos.route_lists.*;
 import org.deliverysystem.com.dtos.search.RouteListSearchCriteria;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.export.RouteListExportContext;
@@ -58,20 +55,20 @@ public class RouteListController {
         return new ResponseEntity<>(routeListService.createRouteList(dto), HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Оновити існуючий маршрутний лист")
-    public ResponseEntity<RouteListDto> update(
-            @PathVariable Integer id,
-            @Valid @RequestBody RouteListDto dto) {
-        return ResponseEntity.ok(routeListService.update(id, dto));
-    }
-
     @PatchMapping("/items/{itemId}/status")
     public ResponseEntity<Void> updateShipmentStatus(
             @PathVariable Integer itemId,
             @RequestBody UpdateShipmentDeliveryStatusDto dto) {
         routeListService.updateShipmentDeliveryStatus(itemId, dto.action());
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id}/shipments")
+    @Operation(summary = "Додати відправлення до існуючого маршрутного листа")
+    public ResponseEntity<RouteListDto> addShipments(
+            @PathVariable Integer id,
+            @Valid @RequestBody AddShipmentsToRouteListDto dto) {
+        return ResponseEntity.ok(routeListService.addShipments(id, dto));
     }
 
     @DeleteMapping("/{id}")
