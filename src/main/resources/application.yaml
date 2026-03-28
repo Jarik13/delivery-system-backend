@@ -55,5 +55,5 @@ springdoc:
 keycloak:
   server-url: http://localhost:8180
   realm: delivery-system
-  client-id: delivery-backend
-  client-secret: ZSCfc5oKnt0GrRfEXIsYRFPqBMmz3QOO
+  client-id: delivery-system-backend
+  client-secret: sUS2ONeV5JJSuFWvmmbN3tPGHYjLWHmx
