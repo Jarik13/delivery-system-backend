@@ -26,8 +26,4 @@ public class RouteListExportContext {
         }
         return strategy.export(routeLists);
     }
-
-    public List<String> getSupportedFormats() {
-        return List.copyOf(strategies.keySet());
-    }
 }
