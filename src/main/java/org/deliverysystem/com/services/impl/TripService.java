@@ -138,6 +138,14 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                     .and(SpecificationUtils.lte("scheduledArrivalTime", criteria.scheduledArrivalTo()))
                     .and(SpecificationUtils.gte("actualArrivalTime", criteria.actualArrivalFrom()))
                     .and(SpecificationUtils.lte("actualArrivalTime", criteria.actualArrivalTo()));
+
+            if (Boolean.TRUE.equals(criteria.hasMissingWaybills())) {
+                spec = spec.and((root, query, cb) -> {
+                    query.distinct(true);
+                    var waybillRoutes = root.join("waybillRoutes", JoinType.INNER);
+                    return cb.isNull(waybillRoutes.get("waybill"));
+                });
+            }
         }
 
         return new RestPage<>(tripRepository.findAll(spec, pageable).map(mapper::toDto));
@@ -152,7 +160,18 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
         }
 
         return trip.getWaybillRoutes().stream()
-                .sorted(Comparator.comparing(wr -> wr.getSequenceNumber() != null ? wr.getSequenceNumber() : 0))
+                .collect(java.util.stream.Collectors.toMap(
+                        WaybillRoute::getSequenceNumber,
+                        wr -> wr,
+                        (existing, replacement) -> {
+                            if (replacement.getWaybill() != null) {
+                                return replacement;
+                            }
+                            return existing;
+                        }
+                ))
+                .values().stream()
+                .sorted(Comparator.comparing(WaybillRoute::getSequenceNumber))
                 .map(wr -> {
                     Route route = wr.getRoute();
                     String originCityName = null, destCityName = null;

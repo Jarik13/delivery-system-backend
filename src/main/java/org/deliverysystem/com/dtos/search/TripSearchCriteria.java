@@ -49,5 +49,8 @@ public record TripSearchCriteria(
         LocalDateTime actualArrivalFrom,
 
         @Schema(description = "Фактичний час прибуття (до)")
-        LocalDateTime actualArrivalTo
+        LocalDateTime actualArrivalTo,
+
+        @Schema(description = "Тільки рейси, де є сегменти без накладних", example = "true")
+        Boolean hasMissingWaybills
 ) {}
