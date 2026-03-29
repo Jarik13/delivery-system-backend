@@ -1,13 +1,16 @@
 package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.parcels.ParcelDto;
 import org.deliverysystem.com.dtos.parcels.ParcelStatisticsDto;
 import org.deliverysystem.com.dtos.search.ParcelSearchCriteria;
-import org.deliverysystem.com.entities.Parcel;
-import org.deliverysystem.com.entities.StorageCondition;
+import org.deliverysystem.com.dtos.users.CurrentUserDto;
+import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.mappers.ParcelMapper;
+import org.deliverysystem.com.repositories.EmployeeRepository;
 import org.deliverysystem.com.repositories.ParcelRepository;
 import org.deliverysystem.com.repositories.ParcelTypeRepository;
 import org.deliverysystem.com.repositories.StorageConditionRepository;
@@ -29,14 +32,17 @@ import java.util.Set;
 @Service
 public class ParcelService extends AbstractBaseService<Parcel, ParcelDto, Integer> {
     private final ParcelRepository parcelRepository;
+    private final EmployeeRepository employeeRepository;
     private final ParcelTypeRepository parcelTypeRepository;
     private final StorageConditionRepository storageConditionRepository;
 
     public ParcelService(ParcelRepository repository, ParcelMapper mapper,
+                         EmployeeRepository employeeRepository,
                          ParcelTypeRepository parcelTypeRepository,
                          StorageConditionRepository storageConditionRepository) {
         super(mapper, repository);
         this.parcelRepository = repository;
+        this.employeeRepository = employeeRepository;
         this.parcelTypeRepository = parcelTypeRepository;
         this.storageConditionRepository = storageConditionRepository;
     }
@@ -63,22 +69,30 @@ public class ParcelService extends AbstractBaseService<Parcel, ParcelDto, Intege
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "parcelPages", key = "{#criteria, #pageable}", condition = "#pageable.pageNumber < 5")
-    public RestPage<ParcelDto> findAll(ParcelSearchCriteria criteria, Pageable pageable) {
-        if (criteria == null) {
-            Page<ParcelDto> result = parcelRepository.findAll(pageable).map(mapper::toDto);
-            return new RestPage<>(result);
-        }
+    @Cacheable(value = "parcelPages", key = "{#criteria, #pageable, #user.id()}", condition = "#pageable.pageNumber < 5")
+    public RestPage<ParcelDto> findAll(ParcelSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {
+        Integer branchId = employeeRepository.findById(user.id())
+                .map(e -> e.getBranch().getId())
+                .orElse(null);
 
-        Specification<Parcel> spec = Specification.where(SpecificationUtils.<Parcel>iLike("contentDescription", criteria.name()))
-                .and(SpecificationUtils.in("parcelType.id", criteria.parcelTypes()))
-                .and(SpecificationUtils.gte("actualWeight", criteria.weightMin()))
-                .and(SpecificationUtils.lte("actualWeight", criteria.weightMax()))
-                .and(SpecificationUtils.gte("declaredValue", criteria.declaredValueMin()))
-                .and(SpecificationUtils.lte("declaredValue", criteria.declaredValueMax()));
+        Specification<Parcel> spec = Specification.where(parcelByBranch(branchId, user.id()));
+
+        if (criteria != null) {
+            spec = spec.and(SpecificationUtils.iLike("contentDescription", criteria.name()))
+                    .and(SpecificationUtils.in("parcelType.id", criteria.parcelTypes()))
+                    .and(SpecificationUtils.gte("actualWeight", criteria.weightMin()))
+                    .and(SpecificationUtils.lte("actualWeight", criteria.weightMax()))
+                    .and(SpecificationUtils.gte("declaredValue", criteria.declaredValueMin()))
+                    .and(SpecificationUtils.lte("declaredValue", criteria.declaredValueMax()));
+        }
 
         Page<ParcelDto> result = parcelRepository.findAll(spec, pageable).map(mapper::toDto);
         return new RestPage<>(result);
+    }
+
+    @Transactional(readOnly = true)
+    public RestPage<ParcelDto> findUnshipped(Pageable pageable) {
+        return new RestPage<>(parcelRepository.findUnshipped(pageable).map(mapper::toDto));
     }
 
     @Transactional(readOnly = true)
@@ -107,5 +121,32 @@ public class ParcelService extends AbstractBaseService<Parcel, ParcelDto, Intege
             Set<StorageCondition> conditions = new HashSet<>(storageConditionRepository.findAllById(dto.storageConditionIds()));
             entity.setStorageConditions(conditions);
         }
+    }
+
+    private Specification<Parcel> parcelByBranch(Integer branchId, Integer userId) {
+        if (branchId == null && userId == null) return null;
+
+        return (root, query, cb) -> {
+            query.distinct(true);
+
+            Join<Parcel, Shipment> shipmentJoin = root.join("shipment", JoinType.LEFT);
+
+            var originSubquery = query.subquery(Integer.class);
+            var originRoot = originSubquery.from(ShipmentOriginDeliveryPoint.class);
+            originSubquery.select(originRoot.get("shipment").get("id"))
+                    .where(cb.equal(originRoot.get("deliveryPoint").get("branch").get("id"), branchId));
+
+            var destSubquery = query.subquery(Integer.class);
+            var destRoot = destSubquery.from(ShipmentDestinationDeliveryPoint.class);
+            destSubquery.select(destRoot.get("shipment").get("id"))
+                    .where(cb.equal(destRoot.get("deliveryPoint").get("branch").get("id"), branchId));
+
+            return cb.or(
+                    shipmentJoin.get("id").in(originSubquery),
+                    shipmentJoin.get("id").in(destSubquery),
+                    cb.equal(shipmentJoin.get("createdBy").get("id"), userId),
+                    cb.equal(shipmentJoin.get("issuedBy").get("id"), userId)
+            );
+        };
     }
 }

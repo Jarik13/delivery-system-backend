@@ -152,28 +152,6 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
         );
     }
 
-    private String formatClientName(Client client) {
-        if (client == null) return null;
-        return "%s %s %s".formatted(
-                nullToEmpty(client.getLastName()),
-                nullToEmpty(client.getFirstName()),
-                nullToEmpty(client.getMiddleName())
-        ).trim();
-    }
-
-    private String formatEmployeeName(Employee employee) {
-        if (employee == null) return null;
-        return "%s %s %s".formatted(
-                nullToEmpty(employee.getLastName()),
-                nullToEmpty(employee.getFirstName()),
-                nullToEmpty(employee.getMiddleName())
-        ).trim();
-    }
-
-    private String nullToEmpty(String s) {
-        return s != null ? s : "";
-    }
-
     @Transactional(readOnly = true)
     public List<WaybillDto> findAllForExport(Integer number) {
         if (number != null) {
@@ -215,6 +193,15 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
+        BigDecimal totalVolume = shipments.stream()
+                .map(s -> s.getParcel() != null && s.getParcel().getActualWeight() != null
+                        ? s.getParcel().getActualWeight()
+                        .multiply(new BigDecimal("0.005"))
+                        .setScale(4, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+
         Integer nextNumber = waybillRepository.findMaxNumber()
                 .map(max -> max + 1)
                 .orElse(300001);
@@ -222,7 +209,7 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
         Waybill waybill = new Waybill();
         waybill.setNumber(nextNumber);
         waybill.setTotalWeight(totalWeight);
-        waybill.setVolume(BigDecimal.ZERO);
+        waybill.setVolume(totalVolume);
         waybill.setCreatedBy(createdBy);
 
         Waybill saved = waybillRepository.save(waybill);
@@ -249,5 +236,27 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
         log.info("Створено накладну #{} для рейсу {} сегмент {} з {} відправленнями", nextNumber, dto.tripId(), dto.routeId(), shipments.size());
 
         return mapper.toDto(saved);
+    }
+
+    private String formatClientName(Client client) {
+        if (client == null) return null;
+        return "%s %s %s".formatted(
+                nullToEmpty(client.getLastName()),
+                nullToEmpty(client.getFirstName()),
+                nullToEmpty(client.getMiddleName())
+        ).trim();
+    }
+
+    private String formatEmployeeName(Employee employee) {
+        if (employee == null) return null;
+        return "%s %s %s".formatted(
+                nullToEmpty(employee.getLastName()),
+                nullToEmpty(employee.getFirstName()),
+                nullToEmpty(employee.getMiddleName())
+        ).trim();
+    }
+
+    private String nullToEmpty(String s) {
+        return s != null ? s : "";
     }
 }

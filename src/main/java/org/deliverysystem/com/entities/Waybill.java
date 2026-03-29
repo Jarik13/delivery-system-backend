@@ -48,7 +48,6 @@ public class Waybill {
     @OneToMany(mappedBy = "waybill", cascade = CascadeType.ALL)
     private List<WaybillRoute> waybillRoutes = new ArrayList<>();
 
-    @CreatedBy
     @ManyToOne
     @JoinColumn(name = "created_by_id")
     private Employee createdBy;
