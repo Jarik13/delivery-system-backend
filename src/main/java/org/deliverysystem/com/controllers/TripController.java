@@ -60,6 +60,18 @@ public class TripController {
         return ResponseEntity.ok(tripService.update(id, dto));
     }
 
+    @PatchMapping("/waybill-routes/{waybillRouteId}/arrive")
+    public ResponseEntity<Void> markArrived(@PathVariable Integer waybillRouteId) {
+        tripService.markArrived(waybillRouteId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/waybill-routes/{waybillRouteId}/depart")
+    public ResponseEntity<Void> markDeparted(@PathVariable Integer waybillRouteId) {
+        tripService.markDeparted(waybillRouteId);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Видалити рейс")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {

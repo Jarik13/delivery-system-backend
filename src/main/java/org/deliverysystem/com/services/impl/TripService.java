@@ -8,10 +8,7 @@ import org.deliverysystem.com.dtos.search.TripSearchCriteria;
 import org.deliverysystem.com.dtos.trips.TripSegmentDto;
 import org.deliverysystem.com.dtos.trips.WaypointInputDto;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
-import org.deliverysystem.com.entities.Branch;
-import org.deliverysystem.com.entities.Route;
-import org.deliverysystem.com.entities.Trip;
-import org.deliverysystem.com.entities.WaybillRoute;
+import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.mappers.TripMapper;
 import org.deliverysystem.com.repositories.*;
 import org.deliverysystem.com.utils.RestPage;
@@ -23,6 +20,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -35,6 +33,7 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
     private final VehicleRepository vehicleRepository;
     private final TripStatusRepository tripStatusRepository;
     private final WaybillRouteRepository waybillRouteRepository;
+    private final WaybillRouteStatusRepository waybillRouteStatusRepository;
 
     public TripService(TripRepository repository, TripMapper mapper,
                        RouteRepository routeRepository,
@@ -42,7 +41,8 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                        DriverRepository driverRepository,
                        VehicleRepository vehicleRepository,
                        TripStatusRepository tripStatusRepository,
-                       WaybillRouteRepository waybillRouteRepository) {
+                       WaybillRouteRepository waybillRouteRepository,
+                       WaybillRouteStatusRepository waybillRouteStatusRepository) {
         super(mapper, repository);
         this.tripRepository = repository;
         this.routeRepository = routeRepository;
@@ -51,6 +51,7 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
         this.vehicleRepository = vehicleRepository;
         this.tripStatusRepository = tripStatusRepository;
         this.waybillRouteRepository = waybillRouteRepository;
+        this.waybillRouteStatusRepository = waybillRouteStatusRepository;
     }
 
     @Transactional
@@ -144,10 +145,11 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
 
     @Transactional(readOnly = true)
     public List<TripSegmentDto> getSegments(Integer tripId) {
-        Trip trip = repository.findById(tripId)
-                .orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено: " + tripId));
+        Trip trip = repository.findById(tripId).orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено: " + tripId));
 
-        if (trip.getWaybillRoutes() == null) return List.of();
+        if (trip.getWaybillRoutes() == null) {
+            return List.of();
+        }
 
         return trip.getWaybillRoutes().stream()
                 .sorted(Comparator.comparing(wr -> wr.getSequenceNumber() != null ? wr.getSequenceNumber() : 0))
@@ -163,36 +165,90 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                         originCityName = city.getName();
                         originLat = city.getLatitude();
                         originLng = city.getLongitude();
-                    } catch (Exception ignored) {
-                    }
+                    } catch (Exception ignored) {}
 
                     try {
                         var city = route.getDestinationBranch().getDeliveryPoint().getCity();
                         destCityName = city.getName();
                         destLat = city.getLatitude();
                         destLng = city.getLongitude();
-                    } catch (Exception ignored) {
-                    }
+                    } catch (Exception ignored) {}
 
                     try {
-                        if (route.getDistanceKm() != null)
+                        if (route.getDistanceKm() != null) {
                             distance = Double.valueOf(route.getDistanceKm());
-                    } catch (Exception ignored) {
-                    }
+                        }
+                    } catch (Exception ignored) {}
 
-                    boolean hasWaybill = waybillRouteRepository
-                            .existsByTripIdAndRouteIdAndWaybillIsNotNull(tripId, route.getId());
-                    Integer waybillId = waybillRouteRepository
-                            .findWaybillIdByTripIdAndRouteId(tripId, route.getId())
-                            .orElse(null);
+                    Integer waybillId = wr.getWaybill() != null ? wr.getWaybill().getId() : null;
+                    boolean hasWaybill = waybillId != null;
+
+                    boolean isCompleted = wr.getArrivedAt() != null;
+                    boolean isDeparted = wr.getDepartedAt() != null;
 
                     return new TripSegmentDto(
-                            route.getId(), waybillId, wr.getSequenceNumber(),
-                            originCityName, destCityName, distance, hasWaybill,
-                            originLat, originLng, destLat, destLng
+                            wr.getId(),
+                            route.getId(),
+                            waybillId,
+                            wr.getSequenceNumber(),
+                            originCityName,
+                            destCityName,
+                            distance,
+                            hasWaybill,
+                            originLat, originLng,
+                            destLat, destLng,
+                            isCompleted,
+                            isDeparted
                     );
                 })
                 .toList();
+    }
+
+    @Transactional
+    @CacheEvict(value = "tripPages", allEntries = true)
+    public void markArrived(Integer waybillRouteId) {
+        WaybillRoute wr = waybillRouteRepository.findById(waybillRouteId)
+                .orElseThrow(() -> new EntityNotFoundException("Сегмент маршруту не знайдено: " + waybillRouteId));
+
+        Trip trip = wr.getTrip();
+
+        wr.setArrivedAt(LocalDateTime.now());
+        wr.setStatus(waybillRouteStatusRepository.getReferenceById(2));
+        waybillRouteRepository.save(wr);
+
+        if (trip.getActualDepartureTime() == null) {
+            trip.setActualDepartureTime(LocalDateTime.now());
+            trip.setStatus(tripStatusRepository.getReferenceById(3));
+        }
+
+        boolean allPointsReached = trip.getWaybillRoutes().stream().allMatch(route -> route.getArrivedAt() != null);
+
+        if (allPointsReached) {
+            trip.setActualArrivalTime(LocalDateTime.now());
+            trip.setStatus(tripStatusRepository.getReferenceById(5));
+        }
+
+        tripRepository.save(trip);
+    }
+
+    @Transactional
+    @CacheEvict(value = "tripPages", allEntries = true)
+    public void markDeparted(Integer waybillRouteId) {
+        WaybillRoute wr = waybillRouteRepository.findById(waybillRouteId)
+                .orElseThrow(() -> new EntityNotFoundException("Сегмент маршруту не знайдено: " + waybillRouteId));
+
+        Trip trip = wr.getTrip();
+
+        wr.setDepartedAt(LocalDateTime.now());
+        wr.setStatus(waybillRouteStatusRepository.getReferenceById(3));
+        waybillRouteRepository.save(wr);
+
+        if (trip.getActualDepartureTime() == null) {
+            trip.setActualDepartureTime(LocalDateTime.now());
+            trip.setStatus(tripStatusRepository.getReferenceById(3));
+        }
+
+        tripRepository.save(trip);
     }
 
     private Specification<Trip> originCitySpec(String cityName) {

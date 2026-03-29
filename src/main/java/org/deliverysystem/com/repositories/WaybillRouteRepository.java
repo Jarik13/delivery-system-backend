@@ -9,9 +9,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface WaybillRouteRepository extends JpaRepository<WaybillRoute, Long> {
+public interface WaybillRouteRepository extends JpaRepository<WaybillRoute, Integer> {
     boolean existsByTripIdAndRouteIdAndWaybillIsNotNull(Integer tripId, Integer routeId);
-
-    @Query("SELECT wr.waybill.id FROM WaybillRoute wr WHERE wr.trip.id = :tripId AND wr.route.id = :routeId AND wr.waybill IS NOT NULL")
-    Optional<Integer> findWaybillIdByTripIdAndRouteId(@Param("tripId") Integer tripId, @Param("routeId") Integer routeId);
 }
