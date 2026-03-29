@@ -56,11 +56,11 @@ public class RouteListController {
     }
 
     @PatchMapping("/items/{itemId}/status")
-    public ResponseEntity<Void> updateShipmentStatus(
+    @Operation(summary = "Оновити статус відправлення")
+    public ResponseEntity<RouteSheetItemDto> updateShipmentStatus(
             @PathVariable Integer itemId,
             @RequestBody UpdateShipmentDeliveryStatusDto dto) {
-        routeListService.updateShipmentDeliveryStatus(itemId, dto.action());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(routeListService.updateShipmentDeliveryStatus(itemId, dto.action()));
     }
 
     @PatchMapping("/{id}/shipments")
@@ -69,6 +69,12 @@ public class RouteListController {
             @PathVariable Integer id,
             @Valid @RequestBody AddShipmentsToRouteListDto dto) {
         return ResponseEntity.ok(routeListService.addShipments(id, dto));
+    }
+
+    @PatchMapping("/{id}/accept")
+    @Operation(summary = "Прийняти маршрутний лист (статус: Видано кур'єру)")
+    public ResponseEntity<RouteListDto> accept(@PathVariable Integer id) {
+        return ResponseEntity.ok(routeListService.acceptRouteList(id));
     }
 
     @DeleteMapping("/{id}")

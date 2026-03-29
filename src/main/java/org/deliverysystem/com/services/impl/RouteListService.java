@@ -1,10 +1,7 @@
 package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.deliverysystem.com.dtos.route_lists.AddShipmentsToRouteListDto;
-import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
-import org.deliverysystem.com.dtos.route_lists.RouteListDto;
-import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
+import org.deliverysystem.com.dtos.route_lists.*;
 import org.deliverysystem.com.dtos.search.RouteListSearchCriteria;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.*;
@@ -132,7 +129,7 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
 
     @Transactional
     @CacheEvict(value = "routeListPages", allEntries = true)
-    public void updateShipmentDeliveryStatus(Integer itemId, String action) {
+    public RouteSheetItemDto updateShipmentDeliveryStatus(Integer itemId, String action) {
         RouteSheetItem item = routeSheetItemRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("RouteSheetItem not found"));
 
         Shipment shipment = item.getShipment();
@@ -162,7 +159,9 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         }
 
         shipmentRepository.save(shipment);
-        routeSheetItemRepository.save(item);
+        RouteSheetItem savedItem = routeSheetItemRepository.save(item);
+
+        return routeListMapper.toItemDto(savedItem);
     }
 
     @Transactional
@@ -211,6 +210,19 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         routeList.getRouteSheetItems().addAll(newItems);
         routeList.setTotalWeight(totalWeight);
 
+        return routeListMapper.toDto(routeListRepository.save(routeList));
+    }
+
+    @Transactional
+    @CacheEvict(value = {"routeListPages", "routeListStatistics"}, allEntries = true)
+    public RouteListDto acceptRouteList(Integer id) {
+        RouteList routeList = routeListRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Маршрутний лист не знайдено: " + id));
+
+        RouteListStatus status = routeListStatusRepository.findByName("Видано кур'єру")
+                .orElseThrow(() -> new IllegalStateException("Статус 'Видано кур'єру' не знайдено у списку статусів МЛ"));
+
+        routeList.setStatus(status);
         return routeListMapper.toDto(routeListRepository.save(routeList));
     }
 
