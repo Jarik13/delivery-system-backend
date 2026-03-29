@@ -163,8 +163,6 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
 
         shipmentRepository.save(shipment);
         routeSheetItemRepository.save(item);
-
-        updateRouteListStatus(item.getRouteList());
     }
 
     @Transactional
@@ -214,30 +212,6 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         routeList.setTotalWeight(totalWeight);
 
         return routeListMapper.toDto(routeListRepository.save(routeList));
-    }
-
-    private void updateRouteListStatus(RouteList routeList) {
-        List<RouteSheetItem> items = routeList.getRouteSheetItems();
-        long total = items.size();
-        long delivered = items.stream().filter(i -> Boolean.TRUE.equals(i.getDelivered())).count();
-        long refused = items.stream()
-                .filter(i -> "Відмова".equals(i.getShipment().getShipmentStatus().getName()))
-                .count();
-
-        String newStatusName;
-        if (delivered == total) {
-            newStatusName = "Завершено";
-        } else if ((delivered + refused) == total) {
-            newStatusName = "Завершено";
-        } else if (delivered > 0) {
-            newStatusName = "У процесі доставки";
-        } else {
-            newStatusName = "У процесі доставки";
-        }
-
-        RouteListStatus status = routeListStatusRepository.findByName(newStatusName).orElseThrow();
-        routeList.setStatus(status);
-        routeListRepository.save(routeList);
     }
 
     private List<Shipment> resolveAndValidateShipments(List<Integer> shipmentIds) {
