@@ -170,17 +170,17 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
         Trip trip = tripRepository.findById(dto.tripId())
                 .orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено: " + dto.tripId()));
 
-        Route route = routeRepository.findById(dto.routeId())
-                .orElseThrow(() -> new EntityNotFoundException("Маршрут не знайдено: " + dto.routeId()));
+        WaybillRoute waybillRoute = waybillRouteRepository.findByTripIdAndSequenceNumber(dto.tripId(), dto.tripSequenceNumber())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Сегмент №" + dto.tripSequenceNumber() + " для рейсу " + dto.tripId() + " не знайдено в плані маршруту"));
 
-        boolean segmentExists = waybillRouteRepository.existsByTripIdAndRouteIdAndWaybillIsNotNull(dto.tripId(), dto.routeId());
-        if (segmentExists) {
-            throw new IllegalStateException("Накладна для цього сегменту рейсу вже існує");
+        if (waybillRoute.getWaybill() != null) {
+            throw new IllegalStateException("Накладна для зупинки №" + dto.tripSequenceNumber() + " вже існує (ID накладної: " + waybillRoute.getWaybill().getId() + ")");
         }
 
         List<Shipment> shipments = shipmentRepository.findAllById(dto.shipmentIds());
         if (shipments.size() != dto.shipmentIds().size()) {
-            throw new EntityNotFoundException("Деякі відправлення не знайдено");
+            throw new EntityNotFoundException("Деякі відправлення зі списку не знайдено в базі даних");
         }
 
         Employee createdBy = employeeRepository.findById(user.id())
@@ -195,12 +195,10 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
 
         BigDecimal totalVolume = shipments.stream()
                 .map(s -> s.getParcel() != null && s.getParcel().getActualWeight() != null
-                        ? s.getParcel().getActualWeight()
-                        .multiply(new BigDecimal("0.005"))
-                        .setScale(4, RoundingMode.HALF_UP)
+                        ? s.getParcel().getActualWeight().multiply(new BigDecimal("0.005"))
                         : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(2, RoundingMode.HALF_UP);
+                .setScale(4, RoundingMode.HALF_UP);
 
         Integer nextNumber = waybillRepository.findMaxNumber()
                 .map(max -> max + 1)
@@ -212,30 +210,26 @@ public class WaybillService extends AbstractBaseService<Waybill, WaybillDto, Int
         waybill.setVolume(totalVolume);
         waybill.setCreatedBy(createdBy);
 
-        Waybill saved = waybillRepository.save(waybill);
+        Waybill savedWaybill = waybillRepository.save(waybill);
 
-        WaybillRoute waybillRoute = new WaybillRoute();
-        waybillRoute.setWaybill(saved);
-        waybillRoute.setTrip(trip);
-        waybillRoute.setRoute(route);
-        waybillRoute.setSequenceNumber(dto.tripSequenceNumber());
+        waybillRoute.setWaybill(savedWaybill);
         waybillRouteRepository.save(waybillRoute);
 
-        int nextSeq = shipmentWaybillRepository.findMaxSequenceNumberByWaybillId(saved.getId())
+        int nextSeq = shipmentWaybillRepository.findMaxSequenceNumberByWaybillId(savedWaybill.getId())
                 .map(max -> max + 1)
                 .orElse(1);
 
         for (int i = 0; i < shipments.size(); i++) {
             ShipmentWaybill sw = new ShipmentWaybill();
             sw.setShipment(shipments.get(i));
-            sw.setWaybill(saved);
+            sw.setWaybill(savedWaybill);
             sw.setSequenceNumber(nextSeq + i);
             shipmentWaybillRepository.save(sw);
         }
 
-        log.info("Створено накладну #{} для рейсу {} сегмент {} з {} відправленнями", nextNumber, dto.tripId(), dto.routeId(), shipments.size());
+        log.info("Успішно оформлено накладну #{} для рейсу {} (зупинка №{})", nextNumber, dto.tripId(), dto.tripSequenceNumber());
 
-        return mapper.toDto(saved);
+        return mapper.toDto(savedWaybill);
     }
 
     private String formatClientName(Client client) {

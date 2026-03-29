@@ -10,5 +10,5 @@ import java.util.Optional;
 
 @Repository
 public interface WaybillRouteRepository extends JpaRepository<WaybillRoute, Integer> {
-    boolean existsByTripIdAndRouteIdAndWaybillIsNotNull(Integer tripId, Integer routeId);
+    Optional<WaybillRoute> findByTripIdAndSequenceNumber(Integer tripId, Integer sequenceNumber);
 }
