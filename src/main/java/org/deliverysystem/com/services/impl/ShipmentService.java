@@ -50,12 +50,14 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     private final ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository;
     private final ShipmentOriginAddressRepository originAddressRepository;
     private final ShipmentDestinationAddressRepository destinationAddressRepository;
+    private final ShipmentWaybillRepository shipmentWaybillRepository;
 
     private final TripRepository tripRepository;
     private final RouteRepository routeRepository;
     private final StreetRepository streetRepository;
     private final AddressHouseRepository addressHouseRepository;
     private final AddressRepository addressRepository;
+    private final WaybillRouteRepository waybillRouteRepository;
     private final WaybillRouteStatusRepository waybillRouteStatusRepository;
     private final EmployeeRepository employeeRepository;
 
@@ -66,7 +68,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                            PaymentRepository paymentRepository, ParcelTypeRepository parcelTypeRepository, PaymentTypeRepository paymentTypeRepository, ShipmentBoxRepository shipmentBoxRepository,
                            ShipmentOriginDeliveryPointRepository originDeliveryPointRepository, ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository, ShipmentOriginAddressRepository originAddressRepository,
                            ShipmentDestinationAddressRepository destinationAddressRepository, TripRepository tripRepository, RouteRepository routeRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
-                           WaybillRouteStatusRepository waybillRouteStatusRepository, EmployeeRepository employeeRepository) {
+                           ShipmentWaybillRepository shipmentWaybillRepository, WaybillRouteRepository waybillRouteRepository, WaybillRouteStatusRepository waybillRouteStatusRepository, EmployeeRepository employeeRepository) {
         super(mapper, repo);
         this.shipmentRepository = repo;
         this.shipmentMapper = mapper;
@@ -93,6 +95,8 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         this.addressHouseRepository = addressHouseRepository;
         this.addressRepository = addressRepository;
 
+        this.shipmentWaybillRepository = shipmentWaybillRepository;
+        this.waybillRouteRepository = waybillRouteRepository;
         this.waybillRouteStatusRepository = waybillRouteStatusRepository;
         this.employeeRepository = employeeRepository;
     }
@@ -208,6 +212,8 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
             }
             paymentRepository.save(payment);
         }
+
+        autoAssignToWaybill(saved);
 
         return mapper.toDto(saved);
     }
@@ -605,6 +611,50 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                     newAddr.setApartmentNumber(apartmentNumber);
                     return addressRepository.save(newAddr);
                 });
+    }
+
+    private void autoAssignToWaybill(Shipment shipment) {
+        try {
+            Integer originBranchId = originDeliveryPointRepository.findByShipmentId(shipment.getId())
+                    .map(bp -> bp.getDeliveryPoint().getBranch().getId())
+                    .orElse(null);
+
+            Integer destCityId = destinationDeliveryPointRepository.findByShipmentId(shipment.getId())
+                    .map(bp -> bp.getDeliveryPoint().getCity().getId())
+                    .orElse(null);
+
+            if (originBranchId == null || destCityId == null) {
+                return;
+            }
+
+            List<WaybillRoute> potentialSegments = waybillRouteRepository
+                    .findActiveSegmentsForTransitAutoAssign(originBranchId, destCityId);
+
+            if (!potentialSegments.isEmpty()) {
+                WaybillRoute segmentToLoad = potentialSegments.get(0);
+                Waybill targetWaybill = segmentToLoad.getWaybill();
+
+                ShipmentWaybill sw = new ShipmentWaybill();
+                sw.setShipment(shipment);
+                sw.setWaybill(targetWaybill);
+
+                int nextSeq = shipmentWaybillRepository.findMaxSequenceNumberByWaybillId(targetWaybill.getId())
+                        .map(max -> max + 1)
+                        .orElse(1);
+                sw.setSequenceNumber(nextSeq);
+                shipmentWaybillRepository.save(sw);
+
+                shipment.setShipmentStatus(statusRepository.getReferenceById(4));
+                shipmentRepository.save(shipment);
+
+                log.info("AUTO-ASSIGN SUCCESS: Shipment {} added to Waybill #{} (Trip {})",
+                        shipment.getTrackingNumber(),
+                        targetWaybill.getNumber(),
+                        segmentToLoad.getTrip().getNumber());
+            }
+        } catch (Exception e) {
+            log.error("DEBUG-ASSIGN ERROR: Auto-assignment failed: ", e);
+        }
     }
 
     private void deleteExistingLocations(Integer shipmentId) {
