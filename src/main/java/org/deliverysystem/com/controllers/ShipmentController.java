@@ -62,8 +62,10 @@ public class ShipmentController {
     @Operation(summary = "Отримати відправлення, кінцева точка яких збігається з містом призначення сегмента")
     public ResponseEntity<RestPage<ShipmentDto>> getAvailableForSegment(
             @ParameterObject @Valid AvailableShipmentsCriteriaDto criteria,
-            @ParameterObject Pageable pageable) {
-        return ResponseEntity.ok(shipmentService.findAvailableForSegment(criteria, pageable));
+            @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserDto user
+    ) {
+        return ResponseEntity.ok(shipmentService.findAvailableForSegment(criteria, pageable, user));
     }
 
     @Operation(summary = "Отримати відправлення доступні для додавання в маршрутний лист")

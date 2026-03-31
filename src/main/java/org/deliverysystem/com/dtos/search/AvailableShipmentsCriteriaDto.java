@@ -5,6 +5,10 @@ import jakarta.validation.constraints.NotNull;
 
 @Schema(description = "Критерії пошуку відправлень, що підходять під сегмент рейсу")
 public record AvailableShipmentsCriteriaDto(
+        @Schema(description = "ID рейсу (Trip)", example = "3309", requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotNull(message = "ID рейсу є обов'язковим")
+        Integer tripId,
+
         @Schema(description = "ID маршруту (Route)", example = "33091", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull(message = "ID маршруту є обов'язковим")
         Integer routeId,

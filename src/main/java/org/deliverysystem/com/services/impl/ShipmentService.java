@@ -51,6 +51,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     private final ShipmentOriginAddressRepository originAddressRepository;
     private final ShipmentDestinationAddressRepository destinationAddressRepository;
 
+    private final TripRepository tripRepository;
     private final RouteRepository routeRepository;
     private final StreetRepository streetRepository;
     private final AddressHouseRepository addressHouseRepository;
@@ -64,7 +65,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                            StorageConditionRepository storageConditionRepository, BoxVariantRepository boxVariantRepository, DeliveryPointRepository deliveryPointRepository,
                            PaymentRepository paymentRepository, ParcelTypeRepository parcelTypeRepository, PaymentTypeRepository paymentTypeRepository, ShipmentBoxRepository shipmentBoxRepository,
                            ShipmentOriginDeliveryPointRepository originDeliveryPointRepository, ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository, ShipmentOriginAddressRepository originAddressRepository,
-                           ShipmentDestinationAddressRepository destinationAddressRepository, RouteRepository routeRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
+                           ShipmentDestinationAddressRepository destinationAddressRepository, TripRepository tripRepository, RouteRepository routeRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
                            WaybillRouteStatusRepository waybillRouteStatusRepository, EmployeeRepository employeeRepository) {
         super(mapper, repo);
         this.shipmentRepository = repo;
@@ -86,6 +87,7 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         this.originAddressRepository = originAddressRepository;
         this.destinationAddressRepository = destinationAddressRepository;
 
+        this.tripRepository = tripRepository;
         this.routeRepository = routeRepository;
         this.streetRepository = streetRepository;
         this.addressHouseRepository = addressHouseRepository;
@@ -508,36 +510,45 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     }
 
     @Transactional(readOnly = true)
-    public RestPage<ShipmentDto> findAvailableForSegment(AvailableShipmentsCriteriaDto criteria, Pageable pageable) {
-        Route route = routeRepository.findById(criteria.routeId())
-                .orElseThrow(() -> new EntityNotFoundException("Маршрут не знайдено: " + criteria.routeId()));
+    public RestPage<ShipmentDto> findAvailableForSegment(AvailableShipmentsCriteriaDto criteria, Pageable pageable, CurrentUserDto user) {
+        Integer branchId = employeeRepository.findById(user.id())
+                .map(e -> e.getBranch().getId())
+                .orElse(null);
 
-        Integer destinationCityId = route.getDestinationBranch().getDeliveryPoint().getCity().getId();
+        Trip trip = tripRepository.findById(criteria.tripId())
+                .orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено"));
 
-        Specification<Shipment> spec = Specification.where((root, query, cb) -> {
-            query.distinct(true);
+        Integer currentSeq = trip.getWaybillRoutes().stream()
+                .filter(wr -> wr.getRoute().getId().equals(criteria.routeId()))
+                .map(WaybillRoute::getSequenceNumber)
+                .findFirst()
+                .orElse(0);
 
-            var statusJoin = root.join("shipmentStatus");
-            var statusPredicate = statusJoin.get("id").in(List.of(1, 2, 4));
+        List<Integer> futureCityIds = trip.getWaybillRoutes().stream()
+                .filter(wr -> wr.getSequenceNumber() >= currentSeq)
+                .map(wr -> wr.getRoute().getDestinationBranch().getDeliveryPoint().getCity().getId())
+                .distinct()
+                .toList();
 
-            var destCityJoin = root.join("destinationDeliveryPoint")
-                    .join("deliveryPoint")
-                    .join("city");
-            var destinationPredicate = cb.equal(destCityJoin.get("id"), destinationCityId);
+        Specification<Shipment> spec = Specification.where(byBranch(branchId, user.id()))
+                .and((root, query, cb) -> {
+                    query.distinct(true);
 
-            if (criteria.trackingNumber() != null && !criteria.trackingNumber().isBlank()) {
-                var searchPredicate = cb.like(
-                        cb.lower(root.get("trackingNumber")),
-                        "%" + criteria.trackingNumber().toLowerCase() + "%"
-                );
-                return cb.and(statusPredicate, destinationPredicate, searchPredicate);
-            }
+                    var statusPredicate = root.join("shipmentStatus").get("id").in(List.of(1, 2, 4));
 
-            return cb.and(statusPredicate, destinationPredicate);
-        });
+                    var destCityJoin = root.join("destinationDeliveryPoint").join("deliveryPoint").join("city");
+                    var destinationPredicate = destCityJoin.get("id").in(futureCityIds);
 
-        Page<ShipmentDto> result = shipmentRepository.findAll(spec, pageable).map(mapper::toDto);
-        return new RestPage<>(result);
+                    if (criteria.trackingNumber() != null && !criteria.trackingNumber().isBlank()) {
+                        var searchPredicate = cb.like(cb.lower(root.get("trackingNumber")),
+                                "%" + criteria.trackingNumber().toLowerCase() + "%");
+                        return cb.and(statusPredicate, destinationPredicate, searchPredicate);
+                    }
+
+                    return cb.and(statusPredicate, destinationPredicate);
+                });
+
+        return new RestPage<>(shipmentRepository.findAll(spec, pageable).map(mapper::toDto));
     }
 
     @Transactional(readOnly = true)
