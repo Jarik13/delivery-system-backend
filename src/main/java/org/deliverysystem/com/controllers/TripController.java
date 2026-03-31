@@ -42,6 +42,16 @@ public class TripController {
         return ResponseEntity.ok(tripService.getSegments(id));
     }
 
+    @GetMapping("/by-branch")
+    @Operation(summary = "Отримати рейси, що проходять через відділення працівника")
+    public ResponseEntity<RestPage<TripDto>> getByBranch(
+            @ParameterObject TripSearchCriteria criteria,
+            @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserDto user
+    ) {
+        return ResponseEntity.ok(tripService.findAllByEmployeeBranch(criteria, pageable, user));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Отримати деталі рейсу")
     public ResponseEntity<TripDto> getById(@PathVariable Integer id) {

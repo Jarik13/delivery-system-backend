@@ -31,6 +31,7 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
     private final BranchRepository branchRepository;
     private final DriverRepository driverRepository;
     private final VehicleRepository vehicleRepository;
+    private final EmployeeRepository employeeRepository;
     private final TripStatusRepository tripStatusRepository;
     private final WaybillRouteRepository waybillRouteRepository;
     private final WaybillRouteStatusRepository waybillRouteStatusRepository;
@@ -40,6 +41,7 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                        BranchRepository branchRepository,
                        DriverRepository driverRepository,
                        VehicleRepository vehicleRepository,
+                       EmployeeRepository employeeRepository,
                        TripStatusRepository tripStatusRepository,
                        WaybillRouteRepository waybillRouteRepository,
                        WaybillRouteStatusRepository waybillRouteStatusRepository) {
@@ -49,6 +51,7 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
         this.branchRepository = branchRepository;
         this.driverRepository = driverRepository;
         this.vehicleRepository = vehicleRepository;
+        this.employeeRepository = employeeRepository;
         this.tripStatusRepository = tripStatusRepository;
         this.waybillRouteRepository = waybillRouteRepository;
         this.waybillRouteStatusRepository = waybillRouteStatusRepository;
@@ -221,6 +224,48 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                     );
                 })
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public RestPage<TripDto> findAllByEmployeeBranch(TripSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {
+        Integer branchId = employeeRepository.findById(user.id())
+                .map(e -> e.getBranch().getId())
+                .orElseThrow(() -> new EntityNotFoundException("Працівника або його відділення не знайдено"));
+
+        Specification<Trip> branchSpec = (root, query, cb) -> {
+            query.distinct(true);
+            var waybillRoutes = root.join("waybillRoutes", JoinType.LEFT);
+            var route = waybillRoutes.join("route", JoinType.LEFT);
+
+            return cb.or(
+                    cb.equal(route.get("originBranch").get("id"), branchId),
+                    cb.equal(route.get("destinationBranch").get("id"), branchId)
+            );
+        };
+
+        Specification<Trip> spec = Specification.where(branchSpec);
+
+        if (criteria != null) {
+            spec = spec
+                    .and(SpecificationUtils.iLike("number", criteria.tripNumber()))
+                    .and(SpecificationUtils.in("status.id", criteria.tripStatuses()))
+                    .and(SpecificationUtils.equal("driver.id", criteria.driverId()))
+                    .and(SpecificationUtils.equal("vehicle.id", criteria.vehicleId()))
+                    .and(originCitySpec(criteria.originCity()))
+                    .and(destinationCitySpec(criteria.destinationCity()))
+                    .and(anyCitySpec(criteria.anyCity()))
+                    .and(SpecificationUtils.gte("scheduledDepartureTime", criteria.scheduledDepartureFrom()))
+                    .and(SpecificationUtils.lte("scheduledDepartureTime", criteria.scheduledDepartureTo()));
+
+            if (Boolean.TRUE.equals(criteria.hasMissingWaybills())) {
+                spec = spec.and((root, query, cb) -> {
+                    var waybillRoutes = root.join("waybillRoutes", JoinType.INNER);
+                    return cb.isNull(waybillRoutes.get("waybill"));
+                });
+            }
+        }
+
+        return new RestPage<>(tripRepository.findAll(spec, pageable).map(mapper::toDto));
     }
 
     @Transactional
