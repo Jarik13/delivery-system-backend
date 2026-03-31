@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
+import org.deliverysystem.com.dtos.search.AvailableShipmentsCriteriaDto;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
@@ -504,6 +505,39 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         return suggested.stream()
                 .map(mapper::toDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public RestPage<ShipmentDto> findAvailableForSegment(AvailableShipmentsCriteriaDto criteria, Pageable pageable) {
+        Route route = routeRepository.findById(criteria.routeId())
+                .orElseThrow(() -> new EntityNotFoundException("Маршрут не знайдено: " + criteria.routeId()));
+
+        Integer destinationCityId = route.getDestinationBranch().getDeliveryPoint().getCity().getId();
+
+        Specification<Shipment> spec = Specification.where((root, query, cb) -> {
+            query.distinct(true);
+
+            var statusJoin = root.join("shipmentStatus");
+            var statusPredicate = statusJoin.get("id").in(List.of(1, 2, 4));
+
+            var destCityJoin = root.join("destinationDeliveryPoint")
+                    .join("deliveryPoint")
+                    .join("city");
+            var destinationPredicate = cb.equal(destCityJoin.get("id"), destinationCityId);
+
+            if (criteria.trackingNumber() != null && !criteria.trackingNumber().isBlank()) {
+                var searchPredicate = cb.like(
+                        cb.lower(root.get("trackingNumber")),
+                        "%" + criteria.trackingNumber().toLowerCase() + "%"
+                );
+                return cb.and(statusPredicate, destinationPredicate, searchPredicate);
+            }
+
+            return cb.and(statusPredicate, destinationPredicate);
+        });
+
+        Page<ShipmentDto> result = shipmentRepository.findAll(spec, pageable).map(mapper::toDto);
+        return new RestPage<>(result);
     }
 
     @Transactional(readOnly = true)

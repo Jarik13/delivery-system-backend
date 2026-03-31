@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.deliverysystem.com.annotations.CurrentUser;
 import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
+import org.deliverysystem.com.dtos.search.AvailableShipmentsCriteriaDto;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
@@ -55,6 +56,14 @@ public class ShipmentController {
     @GetMapping(value = "/suggested", params = "routeId")
     public ResponseEntity<List<ShipmentDto>> getSuggested(@RequestParam Integer routeId) {
         return ResponseEntity.ok(shipmentService.getSuggestedShipments(routeId));
+    }
+
+    @GetMapping("/available-for-segment")
+    @Operation(summary = "Отримати відправлення, кінцева точка яких збігається з містом призначення сегмента")
+    public ResponseEntity<RestPage<ShipmentDto>> getAvailableForSegment(
+            @ParameterObject @Valid AvailableShipmentsCriteriaDto criteria,
+            @ParameterObject Pageable pageable) {
+        return ResponseEntity.ok(shipmentService.findAvailableForSegment(criteria, pageable));
     }
 
     @Operation(summary = "Отримати відправлення доступні для додавання в маршрутний лист")
