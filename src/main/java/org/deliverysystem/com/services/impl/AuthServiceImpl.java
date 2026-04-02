@@ -3,6 +3,7 @@ package org.deliverysystem.com.services.impl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.deliverysystem.com.dtos.auth.AuthResponse;
 import org.deliverysystem.com.dtos.auth.LoginRequest;
 import org.deliverysystem.com.services.AuthService;
@@ -20,6 +21,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -132,6 +134,42 @@ public class AuthServiceImpl implements AuthService {
             return new AuthResponse(newAccessToken, email, role);
         } catch (HttpClientErrorException e) {
             throw new BadCredentialsException("Refresh token недійсний");
+        }
+    }
+
+    @Override
+    public void forgotPassword(String email) {
+        String adminTokenUrl = serverUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("grant_type", "client_credentials");
+        body.add("client_id", clientId);
+        body.add("client_secret", clientSecret);
+
+        try {
+            ResponseEntity<Map> adminAuthResponse = restTemplate.postForEntity(adminTokenUrl, new HttpEntity<>(body, headers), Map.class);
+            String adminToken = (String) adminAuthResponse.getBody().get("access_token");
+
+            String searchUserUrl = serverUrl + "/admin/realms/" + realm + "/users?email=" + email;
+            HttpHeaders authHeaders = new HttpHeaders();
+            authHeaders.setBearerAuth(adminToken);
+
+            ResponseEntity<List> usersResponse = restTemplate.exchange(searchUserUrl, HttpMethod.GET, new HttpEntity<>(authHeaders), List.class);
+            List<Map<String, Object>> users = usersResponse.getBody();
+
+            if (users != null && !users.isEmpty()) {
+                String userId = (String) users.getFirst().get("id");
+
+                String resetUrl = serverUrl + "/admin/realms/" + realm + "/users/" + userId + "/execute-actions-email";
+                List<String> actions = List.of("UPDATE_PASSWORD");
+
+                restTemplate.exchange(resetUrl, HttpMethod.PUT, new HttpEntity<>(actions, authHeaders), Void.class);
+            }
+        } catch (Exception e) {
+            log.error("Помилка ініціації скидання пароля для: {}", email, e);
         }
     }
 
