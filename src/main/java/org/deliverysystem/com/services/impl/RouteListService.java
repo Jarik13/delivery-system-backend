@@ -75,6 +75,25 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         return routeListMapper.toDto(routeListRepository.save(routeList));
     }
 
+    @Transactional
+    @CacheEvict(value = {"routeListPages", "routeListStatistics"}, allEntries = true)
+    public RouteListDto updateRouteList(Integer id, UpdateRouteListDto dto) {
+        RouteList routeList = routeListRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Маршрутний лист не знайдено: " + id));
+
+        if (!"Сформовано".equals(routeList.getStatus().getName())) {
+            throw new BusinessValidationException("status", "Редагування заборонено. Поточний статус: " + routeList.getStatus().getName());
+        }
+
+        Courier courier = courierRepository.findById(dto.courierId())
+                .orElseThrow(() -> new BusinessValidationException("courierId", "Кур'єра з ID " + dto.courierId() + " не знайдено"));
+
+        routeList.setCourier(courier);
+        routeList.setPlannedDepartureTime(dto.plannedDepartureTime());
+
+        return routeListMapper.toDto(routeListRepository.save(routeList));
+    }
+
     @Transactional(readOnly = true)
     @Cacheable(value = "routeListPages", key = "{#criteria, #pageable, #user}", condition = "#pageable.pageNumber < 10")
     public RestPage<RouteListDto> findAll(RouteListSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {

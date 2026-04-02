@@ -55,6 +55,14 @@ public class RouteListController {
         return new ResponseEntity<>(routeListService.createRouteList(dto), HttpStatus.CREATED);
     }
 
+    @PutMapping("/{id}")
+    @Operation(summary = "Оновити дані маршрутного листа (тільки у статусі 'Сформовано')")
+    public ResponseEntity<RouteListDto> update(
+            @PathVariable Integer id,
+            @Valid @RequestBody UpdateRouteListDto dto) {
+        return ResponseEntity.ok(routeListService.updateRouteList(id, dto));
+    }
+
     @PatchMapping("/items/{itemId}/status")
     @Operation(summary = "Оновити статус відправлення")
     public ResponseEntity<RouteSheetItemDto> updateShipmentStatus(
