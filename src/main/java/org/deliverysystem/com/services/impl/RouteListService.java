@@ -33,6 +33,7 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
     private final RouteSheetItemRepository routeSheetItemRepository;
     private final RouteListStatusRepository routeListStatusRepository;
     private final ShipmentStatusRepository shipmentStatusRepository;
+    private final EmployeeRepository employeeRepository;
     private final RouteListMapper routeListMapper;
 
     public RouteListService(
@@ -42,7 +43,8 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
             CourierRepository courierRepository,
             RouteSheetItemRepository routeSheetItemRepository,
             ShipmentStatusRepository shipmentStatusRepository,
-            RouteListStatusRepository routeListStatusRepository) {
+            RouteListStatusRepository routeListStatusRepository,
+            EmployeeRepository employeeRepository) {
         super(mapper, repository);
         this.routeListRepository = repository;
         this.routeListMapper = mapper;
@@ -51,10 +53,11 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         this.routeSheetItemRepository = routeSheetItemRepository;
         this.shipmentStatusRepository = shipmentStatusRepository;
         this.routeListStatusRepository = routeListStatusRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     @Transactional
-    public RouteListDto createRouteList(CreateRouteListDto dto) {
+    public RouteListDto createRouteList(CreateRouteListDto dto, Integer userId) {
         List<Shipment> shipments = resolveAndValidateShipments(dto.shipmentIds());
         BigDecimal totalWeight = calculateTotalWeight(shipments);
 
@@ -67,6 +70,7 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
 
         RouteList routeList = new RouteList();
         routeList.setCourier(courier);
+        routeList.setCreatedBy(employeeRepository.getReferenceById(userId));
         routeList.setStatus(status);
         routeList.setTotalWeight(totalWeight);
         routeList.setPlannedDepartureTime(dto.plannedDepartureTime());
@@ -255,6 +259,20 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
             throw new BusinessValidationException("shipmentIds", "Відправлення не знайдено: " + missing);
         }
         return shipments;
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = {"routeListPages", "routeListStatistics"}, allEntries = true)
+    public void delete(Integer id) {
+        RouteList routeList = routeListRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Маршрутний лист не знайдено"));
+
+        if (!"Сформовано".equals(routeList.getStatus().getName())) {
+            throw new BusinessValidationException("status", "Можна видалити тільки маршрутний лист у статусі 'Сформовано'");
+        }
+
+        routeListRepository.delete(routeList);
     }
 
     private BigDecimal calculateTotalWeight(List<Shipment> shipments) {

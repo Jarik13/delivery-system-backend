@@ -33,7 +33,8 @@ public class RouteListController {
     public ResponseEntity<RestPage<RouteListDto>> getAll(
             @ParameterObject RouteListSearchCriteria criteria,
             @ParameterObject Pageable pageable,
-            @CurrentUser CurrentUserDto user) {
+            @CurrentUser CurrentUserDto user
+    ) {
         return ResponseEntity.ok(routeListService.findAll(criteria, pageable, user));
     }
 
@@ -51,8 +52,11 @@ public class RouteListController {
 
     @PostMapping
     @Operation(summary = "Створити новий маршрутний лист")
-    public ResponseEntity<RouteListDto> create(@Valid @RequestBody CreateRouteListDto dto) {
-        return new ResponseEntity<>(routeListService.createRouteList(dto), HttpStatus.CREATED);
+    public ResponseEntity<RouteListDto> create(
+            @Valid @RequestBody CreateRouteListDto dto,
+            @CurrentUser CurrentUserDto user
+    ) {
+        return new ResponseEntity<>(routeListService.createRouteList(dto, user.id()), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
