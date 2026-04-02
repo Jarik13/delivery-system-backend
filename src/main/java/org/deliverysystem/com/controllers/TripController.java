@@ -42,6 +42,16 @@ public class TripController {
         return ResponseEntity.ok(tripService.getSegments(id));
     }
 
+    @GetMapping("/by-branch")
+    @Operation(summary = "Отримати рейси, що проходять через відділення працівника")
+    public ResponseEntity<RestPage<TripDto>> getByBranch(
+            @ParameterObject TripSearchCriteria criteria,
+            @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserDto user
+    ) {
+        return ResponseEntity.ok(tripService.findAllByEmployeeBranch(criteria, pageable, user));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Отримати деталі рейсу")
     public ResponseEntity<TripDto> getById(@PathVariable Integer id) {
@@ -58,6 +68,18 @@ public class TripController {
     @Operation(summary = "Оновити дані рейсу")
     public ResponseEntity<TripDto> update(@PathVariable Integer id, @RequestBody TripDto dto) {
         return ResponseEntity.ok(tripService.update(id, dto));
+    }
+
+    @PatchMapping("/waybill-routes/{waybillRouteId}/arrive")
+    public ResponseEntity<Void> markArrived(@PathVariable Integer waybillRouteId) {
+        tripService.markArrived(waybillRouteId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/waybill-routes/{waybillRouteId}/depart")
+    public ResponseEntity<Void> markDeparted(@PathVariable Integer waybillRouteId) {
+        tripService.markDeparted(waybillRouteId);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")

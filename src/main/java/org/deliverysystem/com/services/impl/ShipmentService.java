@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.deliverysystem.com.constants.ErrorMessage;
 import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
+import org.deliverysystem.com.dtos.search.AvailableShipmentsCriteriaDto;
 import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
@@ -49,11 +50,14 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     private final ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository;
     private final ShipmentOriginAddressRepository originAddressRepository;
     private final ShipmentDestinationAddressRepository destinationAddressRepository;
+    private final ShipmentWaybillRepository shipmentWaybillRepository;
 
+    private final TripRepository tripRepository;
     private final RouteRepository routeRepository;
     private final StreetRepository streetRepository;
     private final AddressHouseRepository addressHouseRepository;
     private final AddressRepository addressRepository;
+    private final WaybillRouteRepository waybillRouteRepository;
     private final WaybillRouteStatusRepository waybillRouteStatusRepository;
     private final EmployeeRepository employeeRepository;
 
@@ -63,8 +67,8 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                            StorageConditionRepository storageConditionRepository, BoxVariantRepository boxVariantRepository, DeliveryPointRepository deliveryPointRepository,
                            PaymentRepository paymentRepository, ParcelTypeRepository parcelTypeRepository, PaymentTypeRepository paymentTypeRepository, ShipmentBoxRepository shipmentBoxRepository,
                            ShipmentOriginDeliveryPointRepository originDeliveryPointRepository, ShipmentDestinationDeliveryPointRepository destinationDeliveryPointRepository, ShipmentOriginAddressRepository originAddressRepository,
-                           ShipmentDestinationAddressRepository destinationAddressRepository, RouteRepository routeRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
-                           WaybillRouteStatusRepository waybillRouteStatusRepository, EmployeeRepository employeeRepository) {
+                           ShipmentDestinationAddressRepository destinationAddressRepository, TripRepository tripRepository, RouteRepository routeRepository, StreetRepository streetRepository, AddressHouseRepository addressHouseRepository, AddressRepository addressRepository,
+                           ShipmentWaybillRepository shipmentWaybillRepository, WaybillRouteRepository waybillRouteRepository, WaybillRouteStatusRepository waybillRouteStatusRepository, EmployeeRepository employeeRepository) {
         super(mapper, repo);
         this.shipmentRepository = repo;
         this.shipmentMapper = mapper;
@@ -85,11 +89,14 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         this.originAddressRepository = originAddressRepository;
         this.destinationAddressRepository = destinationAddressRepository;
 
+        this.tripRepository = tripRepository;
         this.routeRepository = routeRepository;
         this.streetRepository = streetRepository;
         this.addressHouseRepository = addressHouseRepository;
         this.addressRepository = addressRepository;
 
+        this.shipmentWaybillRepository = shipmentWaybillRepository;
+        this.waybillRouteRepository = waybillRouteRepository;
         this.waybillRouteStatusRepository = waybillRouteStatusRepository;
         this.employeeRepository = employeeRepository;
     }
@@ -205,6 +212,8 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
             }
             paymentRepository.save(payment);
         }
+
+        autoAssignToWaybill(saved);
 
         return mapper.toDto(saved);
     }
@@ -507,6 +516,48 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     }
 
     @Transactional(readOnly = true)
+    public RestPage<ShipmentDto> findAvailableForSegment(AvailableShipmentsCriteriaDto criteria, Pageable pageable, CurrentUserDto user) {
+        Integer branchId = employeeRepository.findById(user.id())
+                .map(e -> e.getBranch().getId())
+                .orElse(null);
+
+        Trip trip = tripRepository.findById(criteria.tripId())
+                .orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено"));
+
+        Integer currentSeq = trip.getWaybillRoutes().stream()
+                .filter(wr -> wr.getRoute().getId().equals(criteria.routeId()))
+                .map(WaybillRoute::getSequenceNumber)
+                .findFirst()
+                .orElse(0);
+
+        List<Integer> futureCityIds = trip.getWaybillRoutes().stream()
+                .filter(wr -> wr.getSequenceNumber() >= currentSeq)
+                .map(wr -> wr.getRoute().getDestinationBranch().getDeliveryPoint().getCity().getId())
+                .distinct()
+                .toList();
+
+        Specification<Shipment> spec = Specification.where(byBranch(branchId, user.id()))
+                .and((root, query, cb) -> {
+                    query.distinct(true);
+
+                    var statusPredicate = root.join("shipmentStatus").get("id").in(List.of(1, 2, 4));
+
+                    var destCityJoin = root.join("destinationDeliveryPoint").join("deliveryPoint").join("city");
+                    var destinationPredicate = destCityJoin.get("id").in(futureCityIds);
+
+                    if (criteria.trackingNumber() != null && !criteria.trackingNumber().isBlank()) {
+                        var searchPredicate = cb.like(cb.lower(root.get("trackingNumber")),
+                                "%" + criteria.trackingNumber().toLowerCase() + "%");
+                        return cb.and(statusPredicate, destinationPredicate, searchPredicate);
+                    }
+
+                    return cb.and(statusPredicate, destinationPredicate);
+                });
+
+        return new RestPage<>(shipmentRepository.findAll(spec, pageable).map(mapper::toDto));
+    }
+
+    @Transactional(readOnly = true)
     public List<RouteListShipmentDto> getAvailableForRouteList() {
         return shipmentRepository.findAvailableForRouteList().stream()
                 .map(shipmentMapper::toRouteListDto)
@@ -560,6 +611,50 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                     newAddr.setApartmentNumber(apartmentNumber);
                     return addressRepository.save(newAddr);
                 });
+    }
+
+    private void autoAssignToWaybill(Shipment shipment) {
+        try {
+            Integer originBranchId = originDeliveryPointRepository.findByShipmentId(shipment.getId())
+                    .map(bp -> bp.getDeliveryPoint().getBranch().getId())
+                    .orElse(null);
+
+            Integer destCityId = destinationDeliveryPointRepository.findByShipmentId(shipment.getId())
+                    .map(bp -> bp.getDeliveryPoint().getCity().getId())
+                    .orElse(null);
+
+            if (originBranchId == null || destCityId == null) {
+                return;
+            }
+
+            List<WaybillRoute> potentialSegments = waybillRouteRepository
+                    .findActiveSegmentsForTransitAutoAssign(originBranchId, destCityId);
+
+            if (!potentialSegments.isEmpty()) {
+                WaybillRoute segmentToLoad = potentialSegments.get(0);
+                Waybill targetWaybill = segmentToLoad.getWaybill();
+
+                ShipmentWaybill sw = new ShipmentWaybill();
+                sw.setShipment(shipment);
+                sw.setWaybill(targetWaybill);
+
+                int nextSeq = shipmentWaybillRepository.findMaxSequenceNumberByWaybillId(targetWaybill.getId())
+                        .map(max -> max + 1)
+                        .orElse(1);
+                sw.setSequenceNumber(nextSeq);
+                shipmentWaybillRepository.save(sw);
+
+                shipment.setShipmentStatus(statusRepository.getReferenceById(4));
+                shipmentRepository.save(shipment);
+
+                log.info("AUTO-ASSIGN SUCCESS: Shipment {} added to Waybill #{} (Trip {})",
+                        shipment.getTrackingNumber(),
+                        targetWaybill.getNumber(),
+                        segmentToLoad.getTrip().getNumber());
+            }
+        } catch (Exception e) {
+            log.error("DEBUG-ASSIGN ERROR: Auto-assignment failed: ", e);
+        }
     }
 
     private void deleteExistingLocations(Integer shipmentId) {

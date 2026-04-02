@@ -7,9 +7,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface ShipmentOriginDeliveryPointRepository extends JpaRepository<ShipmentOriginDeliveryPoint, Integer> {
     @Modifying
     @Query("DELETE FROM ShipmentOriginDeliveryPoint s WHERE s.shipment.id = :shipmentId")
     void deleteByShipmentId(@Param("shipmentId") Integer shipmentId);
+
+    Optional<ShipmentOriginDeliveryPoint> findByShipmentId(Integer shipmentId);
 }

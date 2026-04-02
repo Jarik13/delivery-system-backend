@@ -15,7 +15,8 @@ public record CreateShipmentDto(
 
         @NotNull(message = "Фактична вага має бути вказана")
         @DecimalMin(value = "0.01", message = "Мінімальна вага для оформлення — 0.01 кг")
-        @Schema(description = "Вага вантажу в кг")
+        @DecimalMax(value = "30.00", message = "Максимальна вага для оформлення — 30 кг")
+        @Schema(description = "Вага вантажу в кг (максимум 30 кг)")
         BigDecimal actualWeight,
 
         @NotBlank(message = "Опис вмісту не може бути порожнім")

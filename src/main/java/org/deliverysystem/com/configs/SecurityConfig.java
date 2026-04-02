@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**", "/ws").permitAll()
 
                         .requestMatchers("/api/v1/users/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/v1/roles/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/v1/profile/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "EMPLOYEE", "DRIVER", "COURIER")
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/regions/**").hasAnyRole("SUPER_ADMIN", "EMPLOYEE", "DRIVER")
@@ -179,7 +180,9 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "http://localhost:3000"
+                "http://localhost:3000",
+                "http://10.10.10.176:5173/",
+                "http://10.124.93.34:5173/"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

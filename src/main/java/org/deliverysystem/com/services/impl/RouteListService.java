@@ -1,10 +1,7 @@
 package org.deliverysystem.com.services.impl;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.deliverysystem.com.dtos.route_lists.AddShipmentsToRouteListDto;
-import org.deliverysystem.com.dtos.route_lists.CreateRouteListDto;
-import org.deliverysystem.com.dtos.route_lists.RouteListDto;
-import org.deliverysystem.com.dtos.route_lists.RouteListStatisticsDto;
+import org.deliverysystem.com.dtos.route_lists.*;
 import org.deliverysystem.com.dtos.search.RouteListSearchCriteria;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.*;
@@ -78,6 +75,25 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         return routeListMapper.toDto(routeListRepository.save(routeList));
     }
 
+    @Transactional
+    @CacheEvict(value = {"routeListPages", "routeListStatistics"}, allEntries = true)
+    public RouteListDto updateRouteList(Integer id, UpdateRouteListDto dto) {
+        RouteList routeList = routeListRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Маршрутний лист не знайдено: " + id));
+
+        if (!"Сформовано".equals(routeList.getStatus().getName())) {
+            throw new BusinessValidationException("status", "Редагування заборонено. Поточний статус: " + routeList.getStatus().getName());
+        }
+
+        Courier courier = courierRepository.findById(dto.courierId())
+                .orElseThrow(() -> new BusinessValidationException("courierId", "Кур'єра з ID " + dto.courierId() + " не знайдено"));
+
+        routeList.setCourier(courier);
+        routeList.setPlannedDepartureTime(dto.plannedDepartureTime());
+
+        return routeListMapper.toDto(routeListRepository.save(routeList));
+    }
+
     @Transactional(readOnly = true)
     @Cacheable(value = "routeListPages", key = "{#criteria, #pageable, #user}", condition = "#pageable.pageNumber < 10")
     public RestPage<RouteListDto> findAll(RouteListSearchCriteria criteria, Pageable pageable, CurrentUserDto user) {
@@ -132,7 +148,7 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
 
     @Transactional
     @CacheEvict(value = "routeListPages", allEntries = true)
-    public void updateShipmentDeliveryStatus(Integer itemId, String action) {
+    public RouteSheetItemDto updateShipmentDeliveryStatus(Integer itemId, String action) {
         RouteSheetItem item = routeSheetItemRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("RouteSheetItem not found"));
 
         Shipment shipment = item.getShipment();
@@ -162,9 +178,9 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         }
 
         shipmentRepository.save(shipment);
-        routeSheetItemRepository.save(item);
+        RouteSheetItem savedItem = routeSheetItemRepository.save(item);
 
-        updateRouteListStatus(item.getRouteList());
+        return routeListMapper.toItemDto(savedItem);
     }
 
     @Transactional
@@ -216,28 +232,17 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
         return routeListMapper.toDto(routeListRepository.save(routeList));
     }
 
-    private void updateRouteListStatus(RouteList routeList) {
-        List<RouteSheetItem> items = routeList.getRouteSheetItems();
-        long total = items.size();
-        long delivered = items.stream().filter(i -> Boolean.TRUE.equals(i.getDelivered())).count();
-        long refused = items.stream()
-                .filter(i -> "Відмова".equals(i.getShipment().getShipmentStatus().getName()))
-                .count();
+    @Transactional
+    @CacheEvict(value = {"routeListPages", "routeListStatistics"}, allEntries = true)
+    public RouteListDto acceptRouteList(Integer id) {
+        RouteList routeList = routeListRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Маршрутний лист не знайдено: " + id));
 
-        String newStatusName;
-        if (delivered == total) {
-            newStatusName = "Завершено";
-        } else if ((delivered + refused) == total) {
-            newStatusName = "Завершено";
-        } else if (delivered > 0) {
-            newStatusName = "У процесі доставки";
-        } else {
-            newStatusName = "У процесі доставки";
-        }
+        RouteListStatus status = routeListStatusRepository.findByName("Видано кур'єру")
+                .orElseThrow(() -> new IllegalStateException("Статус 'Видано кур'єру' не знайдено у списку статусів МЛ"));
 
-        RouteListStatus status = routeListStatusRepository.findByName(newStatusName).orElseThrow();
         routeList.setStatus(status);
-        routeListRepository.save(routeList);
+        return routeListMapper.toDto(routeListRepository.save(routeList));
     }
 
     private List<Shipment> resolveAndValidateShipments(List<Integer> shipmentIds) {

@@ -57,3 +57,11 @@ keycloak:
   realm: delivery-system
   client-id: delivery-system-backend
   client-secret: sUS2ONeV5JJSuFWvmmbN3tPGHYjLWHmx
+
+logging:
+  level:
+    root: INFO
+    org.deliverysystem.com: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.springframework.transaction: INFO
