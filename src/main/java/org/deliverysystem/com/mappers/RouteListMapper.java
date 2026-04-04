@@ -27,7 +27,8 @@ public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> 
     @Mapping(source = "shipment.trackingNumber", target = "trackingNumber")
     @Mapping(target = "recipientFullName", expression = "java(formatName(item.getShipment().getRecipient().getLastName(), item.getShipment().getRecipient().getFirstName(), item.getShipment().getRecipient().getMiddleName()))")
     @Mapping(source = "shipment.recipient.phoneNumber", target = "recipientPhone")
-    @Mapping(source = "shipment", target = "deliveryAddress", qualifiedByName = "mapFullAddress")
+    @Mapping(source = "shipment", target = "deliveryAddress", qualifiedByName = "mapOriginAddress")
+    @Mapping(source = "shipment", target = "destinationAddress", qualifiedByName = "mapDestinationAddress")
     @Mapping(source = "shipment.parcel.actualWeight", target = "weight")
     @Mapping(source = "shipment.price.total", target = "codAmount")
     @Mapping(source = "delivered", target = "isDelivered")
@@ -38,14 +39,14 @@ public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> 
     @Mapping(target = "remainingAmount", expression = "java(resolveRemainingAmount(item.getShipment()))")
     RouteSheetItemDto toItemDto(RouteSheetItem item);
 
-    @Named("mapFullAddress")
-    default String mapFullAddress(Shipment shipment) {
-        if (shipment.getDestinationAddress() != null) {
+    @Named("mapOriginAddress")
+    default String mapOriginAddress(Shipment shipment) {
+        if (shipment.getOriginAddress() != null) {
             try {
-                var addr   = shipment.getDestinationAddress();
-                var house  = addr.getAddress().getHouse();
+                var addr = shipment.getOriginAddress();
+                var house = addr.getAddress().getHouse();
                 var street = house.getStreet();
-                var city   = street.getCity();
+                var city = street.getCity();
                 StringBuilder sb = new StringBuilder();
                 sb.append(city.getName()).append(", ");
                 sb.append(street.getName()).append(", ");
@@ -53,21 +54,57 @@ public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> 
                 if (addr.getAddress().getApartmentNumber() != null)
                     sb.append(", кв. ").append(addr.getAddress().getApartmentNumber());
                 return sb.toString();
-            } catch (Exception e) { return null; }
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        if (shipment.getOriginDeliveryPoint() != null) {
+            try {
+                var dp = shipment.getOriginDeliveryPoint().getDeliveryPoint();
+                StringBuilder sb = new StringBuilder();
+                if (dp.getCity() != null) sb.append(dp.getCity().getName()).append(", ");
+                if (dp.getName() != null) sb.append(dp.getName());
+                if (dp.getAddress() != null) sb.append(", ").append(dp.getAddress());
+                return sb.toString();
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    @Named("mapDestinationAddress")
+    default String mapDestinationAddress(Shipment shipment) {
+        if (shipment.getDestinationAddress() != null) {
+            try {
+                var addr = shipment.getDestinationAddress();
+                var house = addr.getAddress().getHouse();
+                var street = house.getStreet();
+                var city = street.getCity();
+                StringBuilder sb = new StringBuilder();
+                sb.append(city.getName()).append(", ");
+                sb.append(street.getName()).append(", ");
+                sb.append("буд. ").append(house.getNumber());
+                if (addr.getAddress().getApartmentNumber() != null)
+                    sb.append(", кв. ").append(addr.getAddress().getApartmentNumber());
+                return sb.toString();
+            } catch (Exception e) {
+                return null;
+            }
         }
 
         if (shipment.getDestinationDeliveryPoint() != null) {
             try {
                 var dp = shipment.getDestinationDeliveryPoint().getDeliveryPoint();
                 StringBuilder sb = new StringBuilder();
-                if (dp.getCity() != null)
-                    sb.append(dp.getCity().getName()).append(", ");
-                if (dp.getName() != null)
-                    sb.append(dp.getName());
-                if (dp.getAddress() != null)
-                    sb.append(", ").append(dp.getAddress());
+                if (dp.getCity() != null) sb.append(dp.getCity().getName()).append(", ");
+                if (dp.getName() != null) sb.append(dp.getName());
+                if (dp.getAddress() != null) sb.append(", ").append(dp.getAddress());
                 return sb.toString();
-            } catch (Exception e) { return null; }
+            } catch (Exception e) {
+                return null;
+            }
         }
         return null;
     }

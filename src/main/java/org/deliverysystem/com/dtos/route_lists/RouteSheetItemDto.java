@@ -21,6 +21,9 @@ public record RouteSheetItemDto(
         @Schema(description = "Повна адреса доставки", example = "м. Київ, вул. Хрещатик, 1, кв. 15")
         String deliveryAddress,
 
+        @Schema(description = "Адреса призначення (куди доставити)", example = "м. Київ, вул. Хрещатик, 1, кв. 15")
+        String destinationAddress,
+
         @Schema(description = "Вага (кг)", example = "2.5")
         BigDecimal weight,
 
