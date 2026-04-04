@@ -1,12 +1,13 @@
 package org.deliverysystem.com.dtos.shipments;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.deliverysystem.com.enums.DeliveryLocationType;
 
 public record RouteLocationDto(
-        @NotBlank(message = "Тип локації має бути вказаний (BRANCH, POSTOMAT, ADDRESS)")
-        String type,
+        @NotNull
+        DeliveryLocationType type,
 
         @Schema(description = "ID відділення або поштомату")
         Integer deliveryPointId,

@@ -11,6 +11,7 @@ import org.deliverysystem.com.dtos.search.ShipmentSearchCriteria;
 import org.deliverysystem.com.dtos.shipments.*;
 import org.deliverysystem.com.dtos.users.CurrentUserDto;
 import org.deliverysystem.com.entities.*;
+import org.deliverysystem.com.enums.DeliveryLocationType;
 import org.deliverysystem.com.mappers.ShipmentMapper;
 import org.deliverysystem.com.repositories.*;
 import org.deliverysystem.com.utils.RestPage;
@@ -108,6 +109,10 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
         BigDecimal deliveryPrice = type.getName().toLowerCase().contains("експрес")
                 ? new BigDecimal("85.00") : new BigDecimal("60.00");
 
+        if (req.originType() == DeliveryLocationType.POSTOMAT || req.destinationType() == DeliveryLocationType.POSTOMAT) {
+            deliveryPrice = deliveryPrice.add(new BigDecimal("20.00"));
+        }
+
         BigDecimal weightPrice = req.actualWeight().multiply(new BigDecimal("3.5"))
                 .setScale(2, RoundingMode.HALF_UP);
 
@@ -169,7 +174,9 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                 dto.boxVariantId(),
                 dto.shipmentTypeId(),
                 dto.origin() != null ? dto.origin().cityId() : null,
-                dto.destination() != null ? dto.destination().cityId() : null
+                dto.destination() != null ? dto.destination().cityId() : null,
+                dto.origin() != null ? dto.origin().type() : null,
+                dto.destination() != null ? dto.destination().type() : null
         ));
 
         Price price = new Price();
@@ -252,7 +259,9 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                 dto.boxVariantId(),
                 dto.shipmentTypeId(),
                 dto.origin() != null ? dto.origin().cityId() : null,
-                dto.destination() != null ? dto.destination().cityId() : null
+                dto.destination() != null ? dto.destination().cityId() : null,
+                dto.origin() != null ? dto.origin().type() : null,
+                dto.destination() != null ? dto.destination().type() : null
         ));
 
         Price price = shipment.getPrice() != null ? shipment.getPrice() : new Price();
@@ -566,32 +575,39 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
 
 
     private void saveBridgeLocations(Shipment s, RouteLocationDto origin, RouteLocationDto dest) {
-        if ("ADDRESS".equalsIgnoreCase(origin.type())) {
-            Address address = getOrCreateAddress(origin.streetId(), origin.houseNumber(), origin.apartmentNumber());
+        saveEndpointLocation(s, origin, true);
+        saveEndpointLocation(s, dest, false);
+    }
 
-            ShipmentOriginAddress soa = new ShipmentOriginAddress();
-            soa.setShipment(s);
-            soa.setAddress(address);
-            originAddressRepository.save(soa);
-        } else {
-            ShipmentOriginDeliveryPoint op = new ShipmentOriginDeliveryPoint();
-            op.setShipment(s);
-            op.setDeliveryPoint(deliveryPointRepository.getReferenceById(origin.deliveryPointId()));
-            originDeliveryPointRepository.save(op);
-        }
-
-        if ("ADDRESS".equalsIgnoreCase(dest.type())) {
-            Address address = getOrCreateAddress(dest.streetId(), dest.houseNumber(), dest.apartmentNumber());
-
-            ShipmentDestinationAddress sda = new ShipmentDestinationAddress();
-            sda.setShipment(s);
-            sda.setAddress(address);
-            destinationAddressRepository.save(sda);
-        } else {
-            ShipmentDestinationDeliveryPoint dp = new ShipmentDestinationDeliveryPoint();
-            dp.setShipment(s);
-            dp.setDeliveryPoint(deliveryPointRepository.getReferenceById(dest.deliveryPointId()));
-            destinationDeliveryPointRepository.save(dp);
+    private void saveEndpointLocation(Shipment s, RouteLocationDto loc, boolean isOrigin) {
+        switch (loc.type()) {
+            case ADDRESS -> {
+                Address address = getOrCreateAddress(loc.streetId(), loc.houseNumber(), loc.apartmentNumber());
+                if (isOrigin) {
+                    ShipmentOriginAddress soa = new ShipmentOriginAddress();
+                    soa.setShipment(s);
+                    soa.setAddress(address);
+                    originAddressRepository.save(soa);
+                } else {
+                    ShipmentDestinationAddress sda = new ShipmentDestinationAddress();
+                    sda.setShipment(s);
+                    sda.setAddress(address);
+                    destinationAddressRepository.save(sda);
+                }
+            }
+            case POSTOMAT, BRANCH -> {
+                if (isOrigin) {
+                    ShipmentOriginDeliveryPoint op = new ShipmentOriginDeliveryPoint();
+                    op.setShipment(s);
+                    op.setDeliveryPoint(deliveryPointRepository.getReferenceById(loc.deliveryPointId()));
+                    originDeliveryPointRepository.save(op);
+                } else {
+                    ShipmentDestinationDeliveryPoint dp = new ShipmentDestinationDeliveryPoint();
+                    dp.setShipment(s);
+                    dp.setDeliveryPoint(deliveryPointRepository.getReferenceById(loc.deliveryPointId()));
+                    destinationDeliveryPointRepository.save(dp);
+                }
+            }
         }
     }
 
@@ -615,17 +631,26 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
 
     private void autoAssignToWaybill(Shipment shipment) {
         try {
-            Integer originBranchId = originDeliveryPointRepository.findByShipmentId(shipment.getId())
-                    .map(bp -> bp.getDeliveryPoint().getBranch().getId())
+            Integer originBranchId = originDeliveryPointRepository
+                    .findByShipmentId(shipment.getId())
+                    .map(op -> {
+                        DeliveryPoint dp = op.getDeliveryPoint();
+                        if (dp.getPostomat() != null) {
+                            return deliveryPointRepository
+                                    .findFirstByCityIdAndBranchIsNotNull(dp.getCity().getId())
+                                    .map(b -> b.getBranch().getId())
+                                    .orElse(null);
+                        }
+                        return dp.getBranch().getId();
+                    })
                     .orElse(null);
 
-            Integer destCityId = destinationDeliveryPointRepository.findByShipmentId(shipment.getId())
-                    .map(bp -> bp.getDeliveryPoint().getCity().getId())
+            Integer destCityId = destinationDeliveryPointRepository
+                    .findByShipmentId(shipment.getId())
+                    .map(dp -> dp.getDeliveryPoint().getCity().getId())
                     .orElse(null);
 
-            if (originBranchId == null || destCityId == null) {
-                return;
-            }
+            if (originBranchId == null || destCityId == null) return;
 
             List<WaybillRoute> potentialSegments = waybillRouteRepository
                     .findActiveSegmentsForTransitAutoAssign(originBranchId, destCityId);
@@ -653,8 +678,14 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
                         segmentToLoad.getTrip().getNumber());
             }
         } catch (Exception e) {
-            log.error("DEBUG-ASSIGN ERROR: Auto-assignment failed: ", e);
+            log.error("AUTO-ASSIGN ERROR: {}", e.getMessage(), e);
         }
+    }
+
+    private DeliveryPoint findNearestBranchPoint(Integer cityId) {
+        return deliveryPointRepository
+                .findFirstByCityIdAndBranchIsNotNull(cityId)
+                .orElseThrow(() -> new EntityNotFoundException("Не знайдено жодного відділення у місті з id: " + cityId));
     }
 
     private void deleteExistingLocations(Integer shipmentId) {
