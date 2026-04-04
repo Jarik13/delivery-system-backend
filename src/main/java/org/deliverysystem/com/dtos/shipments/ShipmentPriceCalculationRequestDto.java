@@ -2,6 +2,8 @@ package org.deliverysystem.com.dtos.shipments;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
+import org.deliverysystem.com.enums.DeliveryLocationType;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -43,5 +45,11 @@ public record ShipmentPriceCalculationRequestDto(
 
         @NotNull(message = "Місто призначення обов'язкове для розрахунку відстані")
         @Schema(description = "ID міста призначення")
-        Integer destinationCityId
+        Integer destinationCityId,
+
+        @Schema(description = "Тип локації відправлення (BRANCH / POSTOMAT / ADDRESS)")
+        DeliveryLocationType originType,
+
+        @Schema(description = "Тип локації призначення (BRANCH / POSTOMAT / ADDRESS)")
+        DeliveryLocationType destinationType
 ) {}
