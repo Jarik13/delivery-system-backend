@@ -8,6 +8,7 @@ public interface DdlManagementService {
     List<String> getAllTables();
     TableInfoDto getTableInfo(String tableName);
     void createTable(CreateTableRequest request);
+    void dropTable(String tableName);
 
     void addColumn(AddColumnRequest request);
     void dropColumn(DropColumnRequest request);

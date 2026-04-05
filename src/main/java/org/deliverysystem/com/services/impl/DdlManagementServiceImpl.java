@@ -16,6 +16,7 @@ import java.util.*;
 public class DdlManagementServiceImpl implements DdlManagementService {
     private final JdbcTemplate jdbcTemplate;
 
+    @Override
     public List<String> getAllTables() {
         return jdbcTemplate.queryForList(
                 "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES " +
@@ -24,6 +25,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         );
     }
 
+    @Override
     public TableInfoDto getTableInfo(String tableName) {
         validateIdentifier(tableName);
 
@@ -91,6 +93,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         return new TableInfoDto(tableName, columns, constraints, indexes);
     }
 
+    @Override
     public void createTable(CreateTableRequest req) {
         validateIdentifier(req.tableName());
 
@@ -121,6 +124,35 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         jdbcTemplate.execute(sql.toString());
     }
 
+    @Override
+    public void dropTable(String tableName) {
+        validateIdentifier(tableName);
+
+        List<String> references = jdbcTemplate.queryForList(
+                """
+                        SELECT OBJECT_NAME(fk.parent_object_id) AS referencing_table
+                        FROM sys.foreign_keys fk
+                        JOIN sys.tables t ON fk.referenced_object_id = t.object_id
+                        WHERE t.name = ?
+                        """,
+                String.class,
+                tableName
+        );
+
+        if (!references.isEmpty()) {
+            throw new IllegalStateException(
+                    "Не можна видалити таблицю \"" + tableName + "\": на неї посилаються таблиці: "
+                    + String.join(", ", references)
+                    + ". Спочатку видаліть зовнішні ключі."
+            );
+        }
+
+        String sql = "DROP TABLE " + quote(tableName);
+        log.info("DDL dropTable: {}", sql);
+        jdbcTemplate.execute(sql);
+    }
+
+    @Override
     public void addColumn(AddColumnRequest req) {
         validateIdentifier(req.tableName());
         validateIdentifier(req.columnName());
@@ -142,6 +174,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         jdbcTemplate.execute(sql.toString());
     }
 
+    @Override
     public void dropColumn(DropColumnRequest req) {
         validateIdentifier(req.tableName());
         validateIdentifier(req.columnName());
@@ -155,6 +188,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         jdbcTemplate.execute(sql);
     }
 
+    @Override
     public void alterColumn(AlterColumnRequest req) {
         validateIdentifier(req.tableName());
         validateIdentifier(req.columnName());
@@ -172,6 +206,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         jdbcTemplate.execute(sql);
     }
 
+    @Override
     public void setDefault(SetDefaultRequest req) {
         validateIdentifier(req.tableName());
         validateIdentifier(req.columnName());
@@ -190,6 +225,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         }
     }
 
+    @Override
     public void addConstraint(AddConstraintRequest req) {
         validateIdentifier(req.tableName());
         validateIdentifier(req.columnName());
@@ -224,6 +260,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         jdbcTemplate.execute(sql);
     }
 
+    @Override
     public void dropConstraint(DropConstraintRequest req) {
         validateIdentifier(req.tableName());
         validateIdentifier(req.constraintName());
@@ -235,6 +272,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         jdbcTemplate.execute(sql);
     }
 
+    @Override
     public void addIndex(AddIndexRequest req) {
         validateIdentifier(req.tableName());
         req.columnNames().forEach(this::validateIdentifier);
@@ -258,6 +296,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         jdbcTemplate.execute(sql);
     }
 
+    @Override
     public void dropIndex(DropIndexRequest req) {
         validateIdentifier(req.tableName());
         validateIdentifier(req.indexName());
