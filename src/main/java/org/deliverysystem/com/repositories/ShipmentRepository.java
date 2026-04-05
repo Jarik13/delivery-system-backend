@@ -1,17 +1,14 @@
 package org.deliverysystem.com.repositories;
 
+import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
 import org.deliverysystem.com.entities.Shipment;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, JpaSpecificationExecutor<Shipment> {
@@ -83,14 +80,48 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
             """, nativeQuery = true)
     List<Shipment> findSuggestedShipments(Integer originPointId, Integer destPointId);
 
-    @Query(value = """
-                SELECT s.* FROM shipments s
-                JOIN shipment_statuses ss ON ss.shipment_status_id = s.shipment_status_id
-                WHERE ss.shipment_status_name IN (N'Прибув у відділення', N'Прийнято у відділенні')
-                AND NOT EXISTS (
-                    SELECT 1 FROM route_sheet_items rsi WHERE rsi.shipment_id = s.shipment_id
+    @Query("""
+                SELECT new org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto(
+                    s.id,
+                    s.trackingNumber,
+                    CONCAT(r.lastName, ' ', r.firstName, COALESCE(CONCAT(' ', r.middleName), '')),
+                    CASE
+                        WHEN da IS NOT NULL THEN
+                            CONCAT(COALESCE(sc.name, ''), CASE WHEN sc.name IS NOT NULL THEN ', ' ELSE '' END,
+                                   COALESCE(st.name, ''), ' ', COALESCE(h.number, ''),
+                                   CASE WHEN a.apartmentNumber IS NOT NULL THEN CONCAT(', кв. ', a.apartmentNumber) ELSE '' END)
+                        WHEN sddp IS NOT NULL THEN
+                            CONCAT(COALESCE(dpc.name, ''), CASE WHEN dpc.name IS NOT NULL THEN ', ' ELSE '' END, COALESCE(dp.name, ''))
+                        ELSE ''
+                    END,
+                    CASE
+                        WHEN da IS NOT NULL THEN
+                            CONCAT(COALESCE(sc.name, ''), CASE WHEN sc.name IS NOT NULL THEN ', ' ELSE '' END, COALESCE(st.name, ''))
+                        WHEN sddp IS NOT NULL THEN
+                            CONCAT(COALESCE(dpc.name, ''), ' — Самовивіз')
+                        ELSE ''
+                    END,
+                    p.actualWeight,
+                    CASE WHEN LOWER(shipType.name) LIKE '%експрес%' THEN true ELSE false END
                 )
-                ORDER BY s.created_at DESC
-            """, nativeQuery = true)
-    List<Shipment> findAvailableForRouteList();
+                FROM Shipment s
+                JOIN s.shipmentStatus ss
+                JOIN s.recipient r
+                LEFT JOIN s.destinationAddress da
+                LEFT JOIN da.address a
+                LEFT JOIN a.house h
+                LEFT JOIN h.street st
+                LEFT JOIN st.city sc
+                LEFT JOIN s.destinationDeliveryPoint sddp
+                LEFT JOIN sddp.deliveryPoint dp
+                LEFT JOIN dp.city dpc
+                LEFT JOIN s.shipmentType shipType
+                LEFT JOIN s.parcel p
+                WHERE ss.id IN (3, 6)
+                AND NOT EXISTS (
+                    SELECT rsi FROM RouteSheetItem rsi WHERE rsi.shipment.id = s.id
+                )
+                ORDER BY s.createdAt DESC
+            """)
+    List<RouteListShipmentDto> findAvailableForRouteList();
 }
