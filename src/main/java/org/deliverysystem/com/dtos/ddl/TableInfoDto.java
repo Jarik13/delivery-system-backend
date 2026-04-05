@@ -8,5 +8,6 @@ public record TableInfoDto(
         String tableName,
         List<ColumnInfoDto> columns,
         List<ConstraintInfoDto> constraints,
-        List<IndexInfoDto> indexes
+        List<IndexInfoDto> indexes,
+        List<ForeignKeyInfoDto> foreignKeys
 ) {}

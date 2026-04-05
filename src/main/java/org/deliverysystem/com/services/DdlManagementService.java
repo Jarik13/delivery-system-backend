@@ -22,4 +22,8 @@ public interface DdlManagementService {
 
     void addIndex(AddIndexRequest request);
     void dropIndex(DropIndexRequest request);
+
+    void addForeignKey(AddForeignKeyRequest request);
+    void dropForeignKey(DropForeignKeyRequest request);
+    List<String> getReferencedColumns(String tableName);
 }

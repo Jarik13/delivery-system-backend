@@ -1,10 +1,11 @@
-package org.deliverysystem.com.services;
+package org.deliverysystem.com.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.deliverysystem.com.dtos.ddl.*;
 import org.deliverysystem.com.enums.ColumnDataType;
 import org.deliverysystem.com.enums.ConstraintType;
+import org.deliverysystem.com.services.DdlManagementService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -90,7 +91,30 @@ public class DdlManagementServiceImpl implements DdlManagementService {
                 tableName
         );
 
-        return new TableInfoDto(tableName, columns, constraints, indexes);
+        List<ForeignKeyInfoDto> foreignKeys = jdbcTemplate.query(
+                """
+                        SELECT fk.name AS constraint_name,
+                               c.name  AS column_name,
+                               rt.name AS referenced_table,
+                               rc.name AS referenced_column
+                        FROM sys.foreign_keys fk
+                        JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+                        JOIN sys.columns c  ON fkc.parent_object_id   = c.object_id  AND fkc.parent_column_id   = c.column_id
+                        JOIN sys.columns rc ON fkc.referenced_object_id = rc.object_id AND fkc.referenced_column_id = rc.column_id
+                        JOIN sys.tables  pt ON fk.parent_object_id   = pt.object_id
+                        JOIN sys.tables  rt ON fk.referenced_object_id = rt.object_id
+                        WHERE pt.name = ?
+                        """,
+                (rs, i) -> new ForeignKeyInfoDto(
+                        rs.getString("constraint_name"),
+                        rs.getString("column_name"),
+                        rs.getString("referenced_table"),
+                        rs.getString("referenced_column")
+                ),
+                tableName
+        );
+
+        return new TableInfoDto(tableName, columns, constraints, indexes, foreignKeys);
     }
 
     @Override
@@ -101,6 +125,7 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         sql.append(quote(req.tableName())).append(" (\n");
 
         String pkCol = req.primaryKeyColumn() != null ? req.primaryKeyColumn() : req.tableName() + "_id";
+        validateIdentifier(pkCol);
         sql.append("    ").append(quote(pkCol))
                 .append(" INT IDENTITY(1,1) NOT NULL,\n");
 
@@ -308,6 +333,71 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         jdbcTemplate.execute(sql);
     }
 
+    @Override
+    public void addForeignKey(AddForeignKeyRequest req) {
+        validateIdentifier(req.tableName());
+        validateIdentifier(req.columnName());
+        validateIdentifier(req.referencedTable());
+        validateIdentifier(req.referencedColumn());
+
+        boolean columnExists = !jdbcTemplate.queryForList(
+                "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?",
+                req.tableName(), req.columnName()
+        ).isEmpty();
+
+        if (!columnExists) {
+            String addCol = "ALTER TABLE " + quote(req.tableName()) +
+                            " ADD " + quote(req.columnName()) + " INT NULL";
+            log.info("DDL addForeignKey — auto-creating column: {}", addCol);
+            jdbcTemplate.execute(addCol);
+        }
+
+        String constraintName = req.constraintName() != null && !req.constraintName().isBlank()
+                ? req.constraintName()
+                : "FK_" + req.tableName() + "_" + req.columnName();
+
+        validateIdentifier(constraintName);
+
+        String sql = "ALTER TABLE " + quote(req.tableName()) +
+                     " ADD CONSTRAINT " + quote(constraintName) +
+                     " FOREIGN KEY (" + quote(req.columnName()) + ")" +
+                     " REFERENCES " + quote(req.referencedTable()) +
+                     " (" + quote(req.referencedColumn()) + ")";
+
+        log.info("DDL addForeignKey: {}", sql);
+        jdbcTemplate.execute(sql);
+    }
+
+    @Override
+    public void dropForeignKey(DropForeignKeyRequest req) {
+        validateIdentifier(req.tableName());
+        validateIdentifier(req.constraintName());
+
+        String sql = "ALTER TABLE " + quote(req.tableName()) +
+                     " DROP CONSTRAINT " + quote(req.constraintName());
+
+        log.info("DDL dropForeignKey: {}", sql);
+        jdbcTemplate.execute(sql);
+    }
+
+    @Override
+    public List<String> getReferencedColumns(String tableName) {
+        validateIdentifier(tableName);
+        return jdbcTemplate.queryForList(
+                """
+                        SELECT c.name
+                        FROM sys.columns c
+                        JOIN sys.indexes i ON i.object_id = c.object_id AND i.is_primary_key = 1
+                        JOIN sys.index_columns ic ON ic.object_id = i.object_id
+                            AND ic.index_id = i.index_id AND ic.column_id = c.column_id
+                        JOIN sys.tables t ON t.object_id = c.object_id
+                        WHERE t.name = ?
+                        """,
+                String.class,
+                tableName
+        );
+    }
+
     private String buildColumnType(ColumnDataType type, Integer length, Integer precision, Integer scale) {
         return switch (type) {
             case VARCHAR -> "VARCHAR(" + (length != null ? length : 255) + ")";
@@ -384,8 +474,10 @@ public class DdlManagementServiceImpl implements DdlManagementService {
 
     private String sanitizeDefault(String value) {
         if (value.matches("^-?\\d+(\\.\\d+)?$")) return value;
+
         if (value.equalsIgnoreCase("true")) return "1";
         if (value.equalsIgnoreCase("false")) return "0";
+
         if (value.startsWith("'") && value.endsWith("'")) {
             return "(N" + value + ")";
         }
