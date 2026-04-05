@@ -39,6 +39,13 @@ public class DdlManagementController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/tables/{tableName}")
+    @Operation(summary = "Видалити таблицю (DROP TABLE)")
+    public ResponseEntity<Void> dropTable(@PathVariable String tableName) {
+        ddlService.dropTable(tableName);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/columns")
     @Operation(summary = "Додати колонку до таблиці")
     public ResponseEntity<Void> addColumn(@Valid @RequestBody AddColumnRequest request) {
