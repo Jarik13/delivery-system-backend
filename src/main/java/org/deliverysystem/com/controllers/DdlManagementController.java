@@ -101,4 +101,24 @@ public class DdlManagementController {
         ddlService.dropIndex(request);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/foreign-keys")
+    @Operation(summary = "Додати зовнішній ключ")
+    public ResponseEntity<Void> addForeignKey(@Valid @RequestBody AddForeignKeyRequest request) {
+        ddlService.addForeignKey(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/foreign-keys")
+    @Operation(summary = "Видалити зовнішній ключ")
+    public ResponseEntity<Void> dropForeignKey(@Valid @RequestBody DropForeignKeyRequest request) {
+        ddlService.dropForeignKey(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/tables/{tableName}/pk-columns")
+    @Operation(summary = "Отримати PK колонки таблиці (для вибору referenced column)")
+    public ResponseEntity<List<String>> getReferencedColumns(@PathVariable String tableName) {
+        return ResponseEntity.ok(ddlService.getReferencedColumns(tableName));
+    }
 }
