@@ -204,13 +204,55 @@ public class DdlManagementServiceImpl implements DdlManagementService {
         validateIdentifier(req.tableName());
         validateIdentifier(req.columnName());
 
+        List<String> pkConstraints = jdbcTemplate.queryForList(
+                """
+                        SELECT kcu.CONSTRAINT_NAME
+                        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                        JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                            ON kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+                            AND kcu.TABLE_NAME = tc.TABLE_NAME
+                        WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+                            AND kcu.TABLE_NAME = ?
+                            AND kcu.COLUMN_NAME = ?
+                        """,
+                String.class,
+                req.tableName(), req.columnName()
+        );
+
+        if (!pkConstraints.isEmpty()) {
+            throw new IllegalStateException(
+                    "Не можна видалити колонку \"" + req.columnName() + "\": " +
+                    "вона є первинним ключем таблиці. Видалення PK колонок заборонено."
+            );
+        }
+
+        List<String> dependentFks = jdbcTemplate.queryForList(
+                """
+                        SELECT fk.name
+                        FROM sys.foreign_keys fk
+                        JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+                        JOIN sys.columns c ON fkc.parent_column_id = c.column_id
+                            AND fkc.parent_object_id = c.object_id
+                        JOIN sys.tables t ON c.object_id = t.object_id
+                        WHERE t.name = ? AND c.name = ?
+                        """,
+                String.class,
+                req.tableName(), req.columnName()
+        );
+
+        if (!dependentFks.isEmpty()) {
+            throw new IllegalStateException(
+                    "Не можна видалити колонку \"" + req.columnName() + "\": " +
+                    "на неї посилаються зовнішні ключі: " + String.join(", ", dependentFks) +
+                    ". Спочатку видаліть ці FK у вкладці Foreign Keys."
+            );
+        }
+
         dropDefaultConstraintIfExists(req.tableName(), req.columnName());
 
-        String sql = "ALTER TABLE " + quote(req.tableName()) +
-                     " DROP COLUMN " + quote(req.columnName());
-
-        log.info("DDL dropColumn: {}", sql);
-        jdbcTemplate.execute(sql);
+        jdbcTemplate.execute(
+                "ALTER TABLE " + quote(req.tableName()) + " DROP COLUMN " + quote(req.columnName())
+        );
     }
 
     @Override
