@@ -569,7 +569,21 @@ public class ShipmentService extends AbstractBaseService<Shipment, ShipmentDto, 
     @Transactional(readOnly = true)
     public List<RouteListShipmentDto> getAvailableForRouteList() {
         return shipmentRepository.findAvailableForRouteList().stream()
-                .map(shipmentMapper::toRouteListDto)
+                .map(dto -> {
+                    String streetGroup = dto.streetGroup();
+                    if (streetGroup != null && !streetGroup.isBlank() && !streetGroup.contains(",")) {
+                        streetGroup = streetGroup + " — Самовивіз";
+                    }
+                    return new RouteListShipmentDto(
+                            dto.id(),
+                            dto.trackingNumber(),
+                            dto.recipientName(),
+                            dto.deliveryAddress(),
+                            streetGroup,
+                            dto.weight(),
+                            dto.isExpress()
+                    );
+                })
                 .toList();
     }
 

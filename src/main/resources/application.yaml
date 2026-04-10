@@ -62,6 +62,3 @@ logging:
   level:
     root: INFO
     org.deliverysystem.com: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
-    org.springframework.transaction: INFO

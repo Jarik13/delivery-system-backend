@@ -1,6 +1,5 @@
 package org.deliverysystem.com.mappers;
 
-import org.deliverysystem.com.dtos.route_lists.RouteListShipmentDto;
 import org.deliverysystem.com.dtos.shipments.ShipmentDto;
 import org.deliverysystem.com.entities.*;
 import org.mapstruct.Mapper;
@@ -97,54 +96,6 @@ public interface ShipmentMapper extends GenericMapper<Shipment, ShipmentDto> {
     @Mapping(target = "payments", ignore = true)
     @Mapping(target = "returns", ignore = true)
     Shipment toEntity(ShipmentDto dto);
-
-    @Named("toRouteListDto")
-    default RouteListShipmentDto toRouteListDto(Shipment shipment) {
-        String recipient = toFullName(shipment.getRecipient());
-
-        String address = null;
-        String streetGroup = null;
-
-        if (shipment.getDestinationAddress() != null
-            && shipment.getDestinationAddress().getAddress() != null) {
-            var addr = shipment.getDestinationAddress().getAddress();
-            var house = addr.getHouse();
-            var street = house != null ? house.getStreet() : null;
-            var city = street != null ? street.getCity() : null;
-
-            String cityName = city != null ? city.getName() : "";
-            String streetName = street != null ? street.getName() : "";
-            String addrStr = formatAddress(addr);
-
-            address = cityName.isBlank() ? addrStr : cityName + ", " + addrStr;
-            streetGroup = cityName.isBlank()
-                    ? streetName
-                    : cityName + ", " + streetName;
-
-        } else if (shipment.getDestinationDeliveryPoint() != null
-                   && shipment.getDestinationDeliveryPoint().getDeliveryPoint() != null) {
-            var dp = shipment.getDestinationDeliveryPoint().getDeliveryPoint();
-            String cityName = dp.getCity() != null ? dp.getCity().getName() : "";
-            address = cityName.isBlank() ? dp.getName() : cityName + ", " + dp.getName();
-            streetGroup = cityName.isBlank() ? "Самовивіз" : cityName + " — Самовивіз";
-        }
-
-        BigDecimal weight = shipment.getParcel() != null
-                ? shipment.getParcel().getActualWeight() : null;
-
-        boolean isExpress = shipment.getShipmentType() != null
-                            && shipment.getShipmentType().getName().toLowerCase().contains("експрес");
-
-        return new RouteListShipmentDto(
-                shipment.getId(),
-                shipment.getTrackingNumber(),
-                recipient,
-                address,
-                streetGroup,
-                weight,
-                isExpress
-        );
-    }
 
     @Named("resolveWaybillId")
     default Integer resolveWaybillId(Shipment shipment) {
