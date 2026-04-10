@@ -82,6 +82,13 @@ public class TripController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{id}/emergency-stop")
+    @Operation(summary = "Аварійна зупинка рейсу")
+    public ResponseEntity<Void> emergencyStop(@PathVariable Integer id) {
+        tripService.emergencyStop(id);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Видалити рейс")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {

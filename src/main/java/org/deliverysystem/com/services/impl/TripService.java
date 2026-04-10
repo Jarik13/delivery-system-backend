@@ -315,6 +315,17 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
         tripRepository.save(trip);
     }
 
+    @Transactional
+    @CacheEvict(value = "tripPages", allEntries = true)
+    public void emergencyStop(Integer tripId) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Рейс не знайдено: " + tripId));
+
+        trip.setStatus(tripStatusRepository.getReferenceById(6));
+        trip.setActualArrivalTime(LocalDateTime.now());
+        tripRepository.save(trip);
+    }
+
     private Specification<Trip> originCitySpec(String cityName) {
         if (cityName == null || cityName.isBlank()) return (r, q, cb) -> null;
         return (root, query, cb) -> {
