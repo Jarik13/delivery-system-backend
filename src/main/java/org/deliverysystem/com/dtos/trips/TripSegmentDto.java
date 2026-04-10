@@ -5,8 +5,17 @@ public record TripSegmentDto(
         Integer routeId,
         Integer waybillId,
         Integer sequenceNumber,
+
+        Integer originCityId,
         String originCity,
+        Integer originDistrictId,
+        Integer originRegionId,
+
+        Integer destCityId,
         String destCity,
+        Integer destDistrictId,
+        Integer destRegionId,
+
         Double distance,
         boolean hasWaybill,
         Double originLat,

@@ -181,19 +181,29 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                     Double distance = null;
                     Double originLat = null, originLng = null;
                     Double destLat = null, destLng = null;
+                    Integer originCityId = null, originDistrictId = null, originRegionId = null;
+                    Integer destCityId = null, destDistrictId = null, destRegionId = null;
 
                     try {
                         var city = route.getOriginBranch().getDeliveryPoint().getCity();
+                        originCityId = city.getId();
                         originCityName = city.getName();
                         originLat = city.getLatitude();
                         originLng = city.getLongitude();
+
+                        originDistrictId = city.getDistrict().getId();
+                        originRegionId = city.getDistrict().getRegion().getId();
                     } catch (Exception ignored) {}
 
                     try {
                         var city = route.getDestinationBranch().getDeliveryPoint().getCity();
+                        destCityId = city.getId();
                         destCityName = city.getName();
                         destLat = city.getLatitude();
                         destLng = city.getLongitude();
+
+                        destDistrictId = city.getDistrict().getId();
+                        destRegionId = city.getDistrict().getRegion().getId();
                     } catch (Exception ignored) {}
 
                     try {
@@ -213,8 +223,17 @@ public class TripService extends AbstractBaseService<Trip, TripDto, Integer> {
                             route.getId(),
                             waybillId,
                             wr.getSequenceNumber(),
+
+                            originCityId,
                             originCityName,
+                            originDistrictId,
+                            originRegionId,
+
+                            destCityId,
                             destCityName,
+                            destDistrictId,
+                            destRegionId,
+
                             distance,
                             hasWaybill,
                             originLat, originLng,

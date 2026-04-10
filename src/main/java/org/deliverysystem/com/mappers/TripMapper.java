@@ -4,10 +4,7 @@ import org.deliverysystem.com.dtos.trips.CoordinateDto;
 import org.deliverysystem.com.dtos.trips.TripDto;
 import org.deliverysystem.com.dtos.trips.WaybillRefDto;
 import org.deliverysystem.com.dtos.trips.WaypointCoordinateDto;
-import org.deliverysystem.com.entities.Driver;
-import org.deliverysystem.com.entities.Trip;
-import org.deliverysystem.com.entities.Waybill;
-import org.deliverysystem.com.entities.WaybillRoute;
+import org.deliverysystem.com.entities.*;
 import org.deliverysystem.com.utils.CityCoordinatesLoader;
 import org.mapstruct.*;
 
@@ -189,34 +186,49 @@ public interface TripMapper extends GenericMapper<Trip, TripDto> {
         }
 
         List<WaypointCoordinateDto> result = new ArrayList<>();
-        Set<String> seen = new LinkedHashSet<>();
+        Set<Integer> seenCityIds = new LinkedHashSet<>();
 
-        trip.getWaybillRoutes().stream()
+        List<WaybillRoute> sortedRoutes = trip.getWaybillRoutes().stream()
                 .sorted(Comparator.comparing(wr -> wr.getSequenceNumber() != null ? wr.getSequenceNumber() : 0))
-                .forEach(wr -> {
-                    try {
-                        String cityName = wr.getRoute()
-                                .getDestinationBranch()
-                                .getDeliveryPoint()
-                                .getCity()
-                                .getName();
+                .toList();
 
-                        if (cityName == null || cityName.isBlank() || seen.contains(cityName)) return;
-                        seen.add(cityName);
+        if (!sortedRoutes.isEmpty()) {
+            try {
+                var originCity = sortedRoutes.getFirst().getRoute().getOriginBranch().getDeliveryPoint().getCity();
+                addCityToResult(originCity, 1, seenCityIds, result);
+            } catch (Exception ignored) {}
+        }
 
-                        double[] coords = CityCoordinatesLoader.getCoordinates(cityName);
-                        if (coords != null) {
-                            result.add(new WaypointCoordinateDto(
-                                    cityName,
-                                    coords[0],
-                                    coords[1],
-                                    wr.getSequenceNumber()
-                            ));
-                        }
-                    } catch (Exception ignored) {}
-                });
+        for (WaybillRoute wr : sortedRoutes) {
+            try {
+                var destCity = wr.getRoute().getDestinationBranch().getDeliveryPoint().getCity();
+                int seq = (wr.getSequenceNumber() != null ? wr.getSequenceNumber() : 0) + 1;
+                addCityToResult(destCity, seq, seenCityIds, result);
+            } catch (Exception ignored) {}
+        }
 
         return result;
+    }
+
+    private void addCityToResult(City city, Integer seq, Set<Integer> seenIds, List<WaypointCoordinateDto> result) {
+        if (city == null || seenIds.contains(city.getId())) {
+            return;
+        }
+
+        Integer districtId = (city.getDistrict() != null) ? city.getDistrict().getId() : null;
+        Integer regionId = (city.getDistrict() != null && city.getDistrict().getRegion() != null)
+                ? city.getDistrict().getRegion().getId() : null;
+
+        seenIds.add(city.getId());
+        result.add(new WaypointCoordinateDto(
+                city.getId(),
+                city.getName(),
+                districtId,
+                regionId,
+                city.getLatitude(),
+                city.getLongitude(),
+                seq
+        ));
     }
 
     private CoordinateDto resolveCoordinates(String cityName) {
