@@ -160,6 +160,16 @@ public class RouteListService extends AbstractBaseService<RouteList, RouteListDt
 
         switch (action) {
             case "DELIVERED" -> {
+                BigDecimal total = shipment.getPrice() != null ? shipment.getPrice().getTotal() : BigDecimal.ZERO;
+                BigDecimal paid = shipment.getPayments() == null ? BigDecimal.ZERO : shipment.getPayments().stream()
+                        .map(p -> p.getAmount() != null ? p.getAmount() : BigDecimal.ZERO)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal remaining = total.subtract(paid);
+
+                if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                    return routeListMapper.toItemDto(item);
+                }
+
                 ShipmentStatus status = shipmentStatusRepository.findByName("Доставлено").orElseThrow();
                 shipment.setShipmentStatus(status);
                 shipment.setIssuedAt(now);

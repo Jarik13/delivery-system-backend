@@ -49,5 +49,8 @@ public record RouteSheetItemDto(
         BigDecimal remainingAmount,
 
         @Schema(description = "Загальна вартість відправлення")
-        BigDecimal totalPrice
+        BigDecimal totalPrice,
+
+        @Schema(description = "Чи відправлення повністю оплачено")
+        Boolean isFullyPaid
 ) {}

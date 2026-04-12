@@ -37,6 +37,7 @@ public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> 
     @Mapping(source = "shipment.price.total", target = "totalPrice")
     @Mapping(target = "hasCod", expression = "java(resolveHasCod(item.getShipment()))")
     @Mapping(target = "remainingAmount", expression = "java(resolveRemainingAmount(item.getShipment()))")
+    @Mapping(target = "isFullyPaid", expression = "java(resolveIsFullyPaid(item.getShipment()))")
     RouteSheetItemDto toItemDto(RouteSheetItem item);
 
     @Named("mapOriginAddress")
@@ -139,6 +140,21 @@ public interface RouteListMapper extends GenericMapper<RouteList, RouteListDto> 
             return remaining.compareTo(BigDecimal.ZERO) > 0 ? remaining : BigDecimal.ZERO;
         } catch (Exception e) {
             return BigDecimal.ZERO;
+        }
+    }
+
+    default Boolean resolveIsFullyPaid(Shipment shipment) {
+        try {
+            BigDecimal total = shipment.getPrice().getTotal();
+            if (total == null || total.compareTo(BigDecimal.ZERO) == 0) return true;
+            BigDecimal paid = shipment.getPayments() == null
+                    ? BigDecimal.ZERO
+                    : shipment.getPayments().stream()
+                      .map(p -> p.getAmount() != null ? p.getAmount() : BigDecimal.ZERO)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+            return paid.compareTo(total) >= 0;
+        } catch (Exception e) {
+            return false;
         }
     }
 
